@@ -1,0 +1,3 @@
+[submodule "lib/py-xuxian"]
+	path = lib/py-xuxian
+	url = git@github.com:zxteloiv/py-xuxian.git
