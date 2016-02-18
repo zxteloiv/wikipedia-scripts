@@ -1,2 +1,6 @@
 # wikipedia-scripts
-scripts that process wikipedia data
+Scripts that help process wikipedia data.
+
+### License
+
+The Star And Thank Author License(SATA)
