@@ -12,10 +12,20 @@ import xuxian
 parser = xuxian.get_parser()
 parser.add_argument('--wiki-file', required=True)
 
-def foo(args):
-    pass
+from wiki_doc import charset_wrapper, wikiobj_to_doc
+
+def main(args):
+    docs = wikiobj_to_doc(charset_wrapper(open(args.wiki_file)))
+    for doc in docs:
+        for line in doc['text']:
+            # every line is a paragraph in wikipedia
+            plaintext = get_plain_text(line)
+            mentions = get_plain_text_mention_info(line)
+
+            pass
+
 
 if __name__ == "__main__":
     xuxian.parse_args()
-    xuxian.run(foo)
+    xuxian.run(main)
 
