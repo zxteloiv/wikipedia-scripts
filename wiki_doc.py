@@ -6,6 +6,9 @@ import re
 DOC_START_PATTERN = re.compile('<doc id="(\d+)" url="([^"]+)" title="([^"]+)"')
 DOC_END_PATTERN = re.compile('</doc>')
 
+def charset_wrapper(fileobj, charset='utf-8'):
+    return (line.decode(charset) for line in fileobj)
+
 def wikiobj_to_doc(wikiobj):
 
     # state could only be out of or inside a doc
@@ -42,11 +45,11 @@ if __name__ == "__main__":
 
     class PrettyDoc(dict):
         def __str__(self):
-            return (str(self['id']) + "\n" +
-                    str(self['url']) + "\n" +
-                    str(self['title']) + "\n" + 
+            return ("id:\t" + str(self['id']) + "\n" +
+                    "url:\t" + str(self['url']) + "\n" +
+                    "title:\t" + str(self['title']) + "\n" + 
                     "\n".join(self['text'][:5]))
 
-    for doc in wikiobj_to_doc(open(sys.argv[1], 'r')):
+    for doc in wikiobj_to_doc(charset_wrapper(open(sys.argv[1], 'r')))
         print PrettyDoc(doc)
         break
