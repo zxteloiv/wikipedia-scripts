@@ -50,6 +50,5 @@ if __name__ == "__main__":
                     "title:\t" + str(self['title']) + "\n" + 
                     "\n".join(self['text'][:5]))
 
-    for doc in wikiobj_to_doc(charset_wrapper(open(sys.argv[1], 'r')))
-        print PrettyDoc(doc)
-        break
+    doc = wikiobj_to_doc(charset_wrapper(open(sys.argv[1], 'r'))).next()
+    print PrettyDoc(doc)
