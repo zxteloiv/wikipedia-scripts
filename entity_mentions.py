@@ -21,7 +21,7 @@ def get_entity_mentions_in_lines(lines):
             for mention in get_entity_mentions(line))
 
 def get_plain_text(text):
-    return re.sub('<.*?>', '', text)
+    return re.sub('<.*?>', '', text).strip()
 
 def get_plain_text_mention_info(text):
     """
