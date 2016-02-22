@@ -59,7 +59,8 @@ def get_plain_text_mention_info(text):
     return plain_mentions
 
 if __name__ == "__main__":
-    from wiki_doc import wikiobj_to_doc, charset_wrapper
+    from utils import charset_wrapper
+    from wiki_doc import wikiobj_to_doc
     from entity_mentions import get_entity_mentions, get_entity_mentions_in_lines
     from entity_mentions import get_plain_text, get_plain_text_mention_info
     import sys
