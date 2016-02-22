@@ -24,7 +24,11 @@ def get_plain_text(text):
     return re.sub('<.*?>', '', text)
 
 def get_plain_text_mention_info(text):
-    """ Get mention info in plain text """
+    """
+    Get mention info in plain text
+    :param text, raw line string
+    :return list of mentions: (start, ends, entity_href, mention_repr)
+    """
 
     mentions = list(get_entity_mentions(text))
     if not mentions:
