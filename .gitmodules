@@ -1,3 +1,6 @@
 [submodule "lib/py-xuxian"]
 	path = lib/py-xuxian
 	url = git@github.com:zxteloiv/py-xuxian.git
+[submodule "lib/py-corenlp"]
+	path = lib/py-corenlp
+	url = https://github.com/zxteloiv/py-corenlp.git
