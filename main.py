@@ -28,6 +28,7 @@ from wiki_doc import wikiobj_to_doc
 from utils import charset_wrapper, init_corenlp
 from entity_wikilink import build_entity_wikilink_map, href_to_wikilink
 from entity_mentions import get_plain_text, get_plain_text_mention_info
+from depparse import depparse_paragraph, find_sentence_by_offset
 
 def main(args):
     recovery_state = xuxian.recall(args.task_id)
@@ -49,20 +50,29 @@ def main(args):
             # at the correct time point, clear the recovery state
             if recovery_state == doc['id'] + str(lineno):
                 recovery_state = None
-
             if recovery_state is not None:
                 continue
 
-            for (mstart, mend, href, _) in mentions:
+            depparsed_output = depparse_paragraph(plaintext, nlp, 'utf-8')
+            if u'sentences' not in depparsed_output:
+                # TODO: empty ?
+                continue
+
+            sentences = depparsed_output[u'sentences']
+
+            # formatted output
+            for (mstart, mend, href, string) in mentions:
                 wikilink = href_to_wikilink(href)
                 if wikilink not in wikilink_to_entity:
                     # TODO: print error
                     continue
 
-                entity_sentence_outfile.info(u"{0}\t{1}\t{2}\t{3}".format(
+                entity_sentence_outfile.info(u"{0}\t{1}\t{2}\t{3}\t{4}".format(
                         wikilink_to_entity[href_to_wikilink(href)],
-                        mstart, mend, plaintext))
-
+                        string,
+                        mstart, mend,
+                        find_sentence_by_offset(sentences, mstart, mend)
+                        ))
 
             xuxian.remember(args.task_id, doc['id'] + str(lineno))
 
