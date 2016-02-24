@@ -53,7 +53,7 @@ def main(args):
             if recovery_state is not None:
                 continue
 
-            depparsed_output = depparse_paragraph(plaintext, nlp, 'utf-8')
+            depparsed_output = depparse_paragraph(plaintext, nlp)
             if u'sentences' not in depparsed_output:
                 # TODO: empty ?
                 continue

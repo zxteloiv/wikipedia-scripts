@@ -1,6 +1,6 @@
 # coding: utf-8
 
-def depparse_paragraph(para, nlp, response_encoding='utf-8'):
+def depparse_paragraph(para, nlp, response_encoding=None):
     return nlp.annotate(para.encode('utf-8'),
             properties={'outputFormat':'json', 'annotators':'depparse'},
             response_encoding=response_encoding)
@@ -16,8 +16,8 @@ def restore_sentence_from_tokens(tokens):
 
     sentence += u"".join(x['originalText'] + x['after'] for x in tokens)
 
-    # a trick that make the encoding works correctly with CoreNLP Server 3.5.0
-    sentence = sentence.encode('iso-8859-1').decode('utf-8')
+    # a trick that make the encoding works correctly with CoreNLP Server 3.6.0
+    #sentence = sentence.encode('iso-8859-1').decode('utf-8')
     return sentence
 
 def find_entity_deproute(tokens, depparse, entity_a, entity_b):
