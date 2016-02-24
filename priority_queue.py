@@ -21,7 +21,7 @@ class MinPriorityQueue(object):
                 minpos, minkey = i, x
 
         if minkey is None:
-            raise ValueError('failed to pop out an empty queue')
+            return None
 
         self.data_ = self.data_[:minpos] + self.data_[minpos + 1:]
         return minkey
