@@ -50,7 +50,7 @@ def process_paragraph_single_entity(sentences, mentions,
 
         outfile.info(u"{0}\t{1}\t{2}\t{3}\t{4}".format(
                 wikilink_to_entity[wikilink],
-                string,
+                href,
                 mstart - sentence_offset, mend - sentence_offset,
                 find_sentence_by_offset(sentences, mstart, mend)
                 ))
