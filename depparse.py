@@ -11,8 +11,10 @@ def restore_sentence_from_tokens(tokens):
     if not tokens:
         return sentence
 
-    if len(tokens[0]['before']) > 0:
-        sentence += tokens[0]['before']
+    # for the sake of sentence offset to be accurate, character before the first
+    # token will be ignored (e.g. a space between consequent sentences of a paragraph)
+    #if len(tokens[0]['before']) > 0:
+    #    sentence += tokens[0]['before']
 
     sentence += u"".join(x['originalText'] + x['after'] for x in tokens)
 

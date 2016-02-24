@@ -3,18 +3,22 @@
 
 import re
 
-def get_entity_mentions(text):
+ENTITY_MENTION_RE = re.compile('<a href="([^"]+)">(.*?)</a>')
+
+def get_entity_mentions(text, offset=0):
     """
     Generate the <entity, mention, line_no> pair
-    :param text, a string that contains the line to process
+    :param text: a string that contains the line to process
+    :param offset: an offset for text searching, and will be subtracted from the
+                    matching object offset
 
     :return generator of tuple (match_start, match_end, entity_link, mention)
     """
 
-    matches = re.finditer('<a href="([^"]+)">(.*?)</a>', text)
+    matches = ENTITY_MENTION_RE.finditer(text, offset)
 
     for m in matches:
-        yield (m.start(), m.end(), m.group(1), m.group(2))
+        yield (m.start() - offset, m.end() - offset, m.group(1), m.group(2))
 
 def get_entity_mentions_in_lines(lines):
     return ((i, mention) for (i, line) in enumerate(lines)
@@ -23,14 +27,15 @@ def get_entity_mentions_in_lines(lines):
 def get_plain_text(text):
     return re.sub('<.*?>', '', text).strip()
 
-def get_plain_text_mention_info(text):
+def get_plain_text_mention_info(text, offset=0):
     """
     Get mention info in plain text
-    :param text, raw line string
+    :param text: raw line string
+    :param offset: the returned start and end position will be based on the offset
     :return list of mentions: (start, ends, entity_href, mention_repr)
     """
 
-    mentions = list(get_entity_mentions(text))
+    mentions = list(get_entity_mentions(text, offset))
     if not mentions:
         return []
 

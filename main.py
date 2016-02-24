@@ -28,7 +28,8 @@ from wiki_doc import wikiobj_to_doc
 from utils import charset_wrapper, init_corenlp
 from entity_wikilink import build_entity_wikilink_map, href_to_wikilink
 from entity_mentions import get_plain_text, get_plain_text_mention_info
-from depparse import depparse_paragraph, find_sentence_by_offset
+from depparse import depparse_paragraph
+from depparse import find_sentence_by_offset, get_sentence_id
 
 def main(args):
     recovery_state = xuxian.recall(args.task_id)
@@ -67,10 +68,18 @@ def main(args):
                     # TODO: print error
                     continue
 
+                # get the sentence id and its offset in the paragraph line
+                sentence_id = get_sentence_id(sentences, mstart, mend)
+                if sentence_id >= len(sentences):
+                    # TODO: print error
+                    continue
+                tokens = sentences[sentence_id][u'tokens']
+                sentence_offset = tokens[0]['characterOffsetBegin']
+
                 entity_sentence_outfile.info(u"{0}\t{1}\t{2}\t{3}\t{4}".format(
-                        wikilink_to_entity[href_to_wikilink(href)],
+                        wikilink_to_entity[wikilink],
                         string,
-                        mstart, mend,
+                        mstart - sentence_offset, mend - sentence_offset,
                         find_sentence_by_offset(sentences, mstart, mend)
                         ))
 
