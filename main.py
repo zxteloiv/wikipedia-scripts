@@ -55,6 +55,18 @@ def process_paragraph_single_entity(sentences, mentions,
                 find_sentence_by_offset(sentences, mstart, mend)
                 ))
 
+def process_paragraph_multiple_entity(sentences, mentions,
+        wikilink_to_entity, entity_to_wikilink, outfile):
+    """
+    To produce a deproute between any two of the entities in a sentence.
+    Produce each line: entity1, entity2, deproute, and sentence separated by tab
+
+    :param sentences:
+    :param mentions: 
+
+    """
+    pass
+
 def main(args):
     recovery_state = xuxian.recall(args.task_id)
 
