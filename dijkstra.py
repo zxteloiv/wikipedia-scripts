@@ -80,7 +80,30 @@ def dijkstra_single_path(src, dest, vertices, edges):
     dist_to, edge_to = _dijkstra_single_src_compute(src, vertices, edges)
     route = _find_route(src, dest, edge_to)
 
-    return (dist_to[dest], route)
+    return dist_to[dest], route
+
+def dijkstra_path_for_regions(src_list, dest_list, vertices, edges):
+    """
+    Get the shortest path from any vertex in src_list to any vertex in dest_list.
+    :param src_list: list of src index
+    :param dest_list: list of dest index
+    :param vertices: a list of vertices
+    :param edges: a list of edges (src, dest, weight)
+
+    :return tuple of (dist, route)
+            where dist is a number indicating the minimal distance,
+            and the route is a list of vertices from the src to dest
+    """
+
+    min_dist, min_route = None, None
+    for src in src_list:
+        result = dijkstra_multiple_dest(src, dest_list, vertices, edges)
+
+        for path in result:
+            if min_dist is None or min_dist > path[0]:
+                min_dist, min_route = path
+
+    return min_dist, min_route
 
 if __name__ == "__main__":
 
@@ -119,5 +142,13 @@ if __name__ == "__main__":
     for (dist, route) in dijkstra_multiple_dest(0, [1,2,3,4,5], vertices, edges):
         print "dist=>", dist, "\troute=>", route
 
+    # shortest path for regions
+    edges = [(0, 1, 1), 
+            (1, 3, 1), (2, 3, 1), (2, 4, 1),
+            (3, 4, 1), (3, 5, 1), (4, 5, 1)
+            ]
 
+    print "\n===> should print out: dist=2 and a route from [0, 1] to [4, 5]"
+    (dist, route) = dijkstra_path_for_regions([0, 1], [4, 5], vertices, edges)
+    print "dist=>", dist, "\troute=>", route
 
