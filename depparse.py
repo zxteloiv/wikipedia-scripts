@@ -44,13 +44,10 @@ def get_sentence_id(sentences, start, end):
 
     return i
 
-def get_token_id_list_by_mention(mention, sentences):
+def get_token_id_list_by_mention(mention, sentence_id):
     """ Given a mention, find all the tokens with its span """
-    (mstart, mend, href, _) = mention
-    sentence_id = get_sentence_id(sentences, mstart, mend)
-
-    if sentence_id and u'tokens' not in sentences:
-        raise ValueError('sentence structure invalid')
+    if u'tokens' not in sentences[sentence_id]:
+        raise ValueError('empty sentence should not be parsed')
     tokens = sentences[sentence_id][u'tokens']
 
     token_id_list = []
@@ -68,14 +65,16 @@ def get_token_id_list_by_mention(mention, sentences):
     return token_id_list
 
 if __name__ == "__main__":
-    from utils import charset_wrapper
+    import sys
+
+    sys.path.insert(1, './lib/py-corenlp')
+
+    from utils import charset_wrapper, init_corenlp
     from wiki_doc import wikiobj_to_doc
     from entity_mentions import get_entity_mentions, get_entity_mentions_in_lines
     from entity_mentions import get_plain_text, get_plain_text_mention_info
-    import sys
-
     doc = wikiobj_to_doc(charset_wrapper(open(sys.argv[1], 'r'))).next()
-    nlp = init_corenlp('http://localhost', 9000)
+    nlp = init_corenlp('localhost', 9000)
 
     for line in doc['text']:
         line = line.rstrip()
@@ -86,10 +85,19 @@ if __name__ == "__main__":
         if not mentions: continue
 
         depparsed_output = depparse_paragraph(plaintext, nlp)
-        sentences = depparse_paragraph['sentences']
+        if u'sentences' not in depparsed_output: continue
 
-        token_id_list = get_token_id_list_by_mention(mentions[0], sentences)
-        print token_id_list
+        sentences = depparsed_output[u'sentences']
 
+        print "\n===============================================\n"
+        print line
+        print "\n-----------------------------------------------\n"
 
-    pass
+        for mention in mentions:
+            (mstart, mend, href, _) = mention
+            sentence_id = get_sentence_id(sentences, mstart, mend)
+
+            tokens = sentences[sentence_id]['tokens']
+            token_id_list = get_token_id_list_by_mention(mentions[0], sentence_id)
+            print "XXX- - new mention - ->", token_id_list, str(list(tokens[i]['originalText'] for i in token_id_list))
+
