@@ -22,9 +22,6 @@ def restore_sentence_from_tokens(tokens):
     #sentence = sentence.encode('iso-8859-1').decode('utf-8')
     return sentence
 
-def find_entity_deproute(tokens, depparse, entity_a, entity_b):
-    pass
-
 def find_sentence_by_offset(sentences, start, end):
 
     sentence_id = get_sentence_id(sentences, start, end)
@@ -35,6 +32,27 @@ def find_sentence_by_offset(sentences, start, end):
     
     return sentence
 
+def vertices_route_to_deproute(route, edges, tokens, dependencies):
+    if len(route) <= 1:
+        return ""
+
+    result = tokens[route[0]]['originalText']
+    for i in xrange(len(route) - 1):
+        if (route[i], route[i + 1], 1) in edges:
+            dep = dependencies[edges[(route[i], route[i + 1], 1)]]
+            direction = '>'
+            next_token = tokens[dep['dependent']]['originalText']
+        elif (route[i + 1], route[i], 1) in edges:
+            dep = dependencies[edges[(route[i + 1], route[i], 1)]]
+            direction = '<'
+            next_token = tokens[dep['governor']]['originalText']
+        else:
+            raise ValueError("Route %s not found" % str(route[i], route[i + 1]))
+
+        result += direction + next_token
+
+    return result
+
 def get_sentence_id(sentences, start, end):
     """ Find the sentence id to which the start-end span belongs """
     for (i, sentence) in enumerate(sentences):
@@ -44,11 +62,11 @@ def get_sentence_id(sentences, start, end):
 
     return i
 
-def get_token_id_list_by_mention(mention, sentence_id):
+def get_token_id_list_by_mention(sentence, mstart, mend):
     """ Given a mention, find all the tokens with its span """
-    if u'tokens' not in sentences[sentence_id]:
+    if u'tokens' not in sentence:
         raise ValueError('empty sentence should not be parsed')
-    tokens = sentences[sentence_id][u'tokens']
+    tokens = sentence[u'tokens']
 
     token_id_list = []
     for (i, token) in enumerate(tokens):
@@ -98,6 +116,7 @@ if __name__ == "__main__":
             sentence_id = get_sentence_id(sentences, mstart, mend)
 
             tokens = sentences[sentence_id]['tokens']
-            token_id_list = get_token_id_list_by_mention(mentions[0], sentence_id)
+            token_id_list = get_token_id_list_by_mention(sentences[sentence_id],
+                    mstart, mend)
             print "XXX- - new mention - ->", token_id_list, str(list(tokens[i]['originalText'] for i in token_id_list))
 
