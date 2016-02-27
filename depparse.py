@@ -36,20 +36,27 @@ def vertices_route_to_deproute(route, edges, tokens, dependencies):
     if len(route) <= 1:
         return ""
 
+    import xuxian
+    syslog = xuxian.log.system_logger
+
     result = tokens[route[0]]['originalText']
     for i in xrange(len(route) - 1):
         if (route[i], route[i + 1], 1) in edges:
             dep = dependencies[edges[(route[i], route[i + 1], 1)]]
-            direction = '>'
-            next_token = tokens[dep['dependent']]['originalText']
+            direction = u'>'
+            next_token = tokens[dep['dependent'] - 1]['originalText']
         elif (route[i + 1], route[i], 1) in edges:
             dep = dependencies[edges[(route[i + 1], route[i], 1)]]
-            direction = '<'
-            next_token = tokens[dep['governor']]['originalText']
+            direction = u'<'
+            next_token = tokens[dep['governor'] - 1]['originalText']
         else:
             raise ValueError("Route %s not found" % str(route[i], route[i + 1]))
 
-        result += direction + next_token
+        if dep['dep'] == u'root':
+            syslog.debug("======root dep>>>>>>>>" + str(dep) + ';string=' +
+                ' '.join(t['originalText'].encode('utf-8') for t in tokens))
+
+        result = (u' ' + direction + u' ').join((result, dep['dep'], next_token))
 
     return result
 

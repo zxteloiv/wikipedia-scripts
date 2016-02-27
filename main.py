@@ -7,8 +7,8 @@ for lib in os.listdir('./lib'):
     sys.path.insert(1, './lib/' + lib)
 
 import re
-import xuxian
 from itertools import permutations
+import xuxian
 
 parser = xuxian.get_parser()
 parser.add_argument('--task-id', required=True, help='execution id')
@@ -37,10 +37,15 @@ from dijkstra import dijkstra_path_for_regions
 def process_paragraph_single_entity(sentences, mentions,
         wikilink_to_entity, entity_to_wikilink, outfile):
     # formatted output each entity mention
+    syslog = xuxian.log.system_logger
+    Dict = xuxian.log.LogDict
     for (mstart, mend, href, string) in mentions:
         wikilink = href_to_wikilink(href)
         if wikilink not in wikilink_to_entity:
             # TODO: print error
+            syslog.debug('empty string:' +
+                    str(Dict({'href':href.encode('utf-8'), 'wikilink':'wikilink',
+                'mention':string.encode('utf-8')})))
             continue
 
         # get the sentence id and its offset in the paragraph line
@@ -60,18 +65,7 @@ def process_paragraph_single_entity(sentences, mentions,
                 find_sentence_by_offset(sentences, mstart, mend)
                 ))
 
-def process_paragraph_multiple_entity(sentences, mentions,
-        wikilink_to_entity, entity_to_wikilink, outfile):
-    """
-    To produce a deproute between any two of the entities in a sentence.
-    Produce each line: entity1, entity2, deproute, and sentence separated by tab
-
-    :param sentences:
-    :param mentions: 
-
-    """
-    syslog = xuxian.log.system_logger
-
+def build_sentence_to_mention_table(sentences, mentions):
     # prepare the lookup structure
     sentence_to_mention = [[] for i in xrange(len(sentences))]
     for mention in mentions:
@@ -81,6 +75,26 @@ def process_paragraph_multiple_entity(sentences, mentions,
                 mstart, mend)
         sentence_to_mention[sentence_id].append((mention, token_list))
 
+    return sentence_to_mention
+
+def mention_pairs(mentions):
+    processed = set()
+    for ((m1, t1), (m2, t2)) in permutations(mentions, 2):
+        if m1 == m2 or (m1, m2) in processed or (m2, m1) in processed:
+            continue
+
+        processed.add((m1, m2))
+        yield ((m1, t1), (m2, t2))
+
+def process_paragraph_multiple_entity(sentences, mentions,
+        wikilink_to_entity, entity_to_wikilink, outfile):
+    """
+    To produce a deproute between any two of the entities in a sentence.
+    Produce each line: entity1, entity2, deproute, and sentence separated by tab
+    """
+    syslog = xuxian.log.system_logger
+
+    sentence_to_mention = build_sentence_to_mention_table(sentences, mentions)
     syslog.debug('sentence_to_mention=' + (
         " ".join(str(i) + '=>' + str(x) for (i, x) in enumerate(sentence_to_mention))
         ))
@@ -91,32 +105,53 @@ def process_paragraph_multiple_entity(sentences, mentions,
         for sentence in sentences]
 
     for sentence_id in xrange(len(sentence_to_mention)):
+        mentions = sentence_to_mention[sentence_id]
+        if len(mentions) <= 1:
+            continue
+
         sentence = sentences[sentence_id]
         tokens = sentence[u'tokens']
-        sentence_mentions = sentence_to_mention[sentence_id]
-
+        sentence_offset = tokens[0]['characterOffsetBegin']
         syslog.debug('sentence=%d ' % sentence_id +
-                'mentions=' + str(sentence_mentions))
+                'mentions=' + str(mentions))
 
-        for ((m1, t1), (m2, t2)) in permutations(sentence_mentions, 2):
+        for ((m1, t1), (m2, t2)) in mention_pairs(mentions):
+            wikilink1, wikilink2 = href_to_wikilink(m1[2]), href_to_wikilink(m2[2])
+            if (wikilink1 not in wikilink_to_entity
+                    or wikilink2 not in wikilink_to_entity):
+                continue
+
             mindist, minroute = dijkstra_path_for_regions(t1, t2,
                     tokens, sentence_edges[sentence_id].keys())
+
+            syslog.debug('----------------------------------------------------')
+            syslog.debug('mindist=' + str(mindist) + ';minroute=' + str(minroute)
+                    + ';src=' + tokens[minroute[0]]['originalText'].encode('utf-8')
+                    + ';dest=' + tokens[minroute[-1]]['originalText'].encode('utf-8')
+                    + ';tokens=' + ' '.join(t['originalText'].encode('utf-8')
+                        for t in tokens)
+                    )
 
             deproute_string = vertices_route_to_deproute(minroute, 
                     sentence_edges[sentence_id], tokens,
                     sentence['basic-dependencies'])
 
-            outfile.info(u"{0}\t{1}\t{2}\t{3}".format(
-                wikilink_to_entity[href_to_wikilink(m1[3])],
-                wikilink_to_entity[href_to_wikilink(m2[3])],
-                deproute_string,
-                restore_sentence_from_tokens(tokens)
+            syslog.debug('deproute_string=====>\t' + deproute_string.encode('utf-8'))
+            syslog.debug('----------------------------------------------------')
+
+            outfile.info(u"{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(
+                wikilink_to_entity[wikilink1], m1[2],
+                m1[0] - sentence_offset, m1[1] - sentence_offset,
+                wikilink_to_entity[wikilink2], m2[2],
+                m2[0] - sentence_offset, m2[1] - sentence_offset,
+                deproute_string, restore_sentence_from_tokens(tokens)
                 ).encode('utf-8'))
     pass
 
 def main(args):
     recovery_state = xuxian.recall(args.task_id)
     syslog = xuxian.log.system_logger
+    Dict = xuxian.log.LogDict
 
     # init global object
     docs = wikiobj_to_doc(charset_wrapper(open(args.wiki_file)))
@@ -145,9 +180,9 @@ def main(args):
                 continue
 
             plaintext = get_plain_text(line)
-            syslog.debug('plaintext=' + plaintext[:100].encode('utf-8'))
             mentions = get_plain_text_mention_info(line)
-            syslog.debug('mention= ' + str(mentions))
+            syslog.debug(Dict({'plaintext' : plaintext[:100].encode('utf-8'),
+                'mention':str(mentions)}))
 
             depparsed_output = depparse_paragraph(plaintext, nlp)
             if u'sentences' not in depparsed_output:

@@ -42,8 +42,6 @@ def _dijkstra_single_src_compute(src, vertices, edges):
 
 def _find_route(src, dest, edge_to):
     # find the shortest route
-    syslog = xuxian.log.system_logger
-    syslog.debug(xuxian.log.LogDict({'src':src, 'dest':dest, 'edge_to':edge_to}))
     route = [dest]
     vertex = dest
     while vertex != src:
