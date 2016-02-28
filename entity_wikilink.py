@@ -25,3 +25,24 @@ def href_to_wikilink(href):
 def upper_first_letter(text):
     return text[0].upper() + text[1:]
 
+def build_redirect_wikilink_map(obj):
+    redirect = dict()
+    if not obj:
+        return redirect
+
+    for line in obj:
+        link1, link2 = line.rstrip().split('\t')
+        link1, link2 = upper_first_letter(link1), upper_first_letter(link2)
+        redirect[link1] = link2
+
+    return redirect
+
+def href_to_entity(href, wikilink_to_entity, redirect=None):
+    link = href_to_wikilink(href)
+    if isinstance(redirect, dict) and link in redirect:
+        link = redirect[link]
+
+    entity = wikilink_to_entity[link] if link in wikilink_to_entity else None
+
+    return entity
+

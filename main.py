@@ -22,12 +22,18 @@ parser.add_argument('--entity-wiki-file', required=True,
         'freebase node and second collumn is wikipedia links.'
         )
 
-parser.add_argument('--entity-sentence-output-file', required=True,
+parser.add_argument('--wiki-redirect-file')
+
+parser.add_argument('--single-entity-output-file', required=True,
         help='output file each line with an entity and the sentence where it appears')
+
+parser.add_argument('--entity-pair-output-file', required=True,
+        help='output file each line with an entity pair and its dependency route')
 
 from wiki_doc import wikiobj_to_doc
 from utils import charset_wrapper, init_corenlp
-from entity_wikilink import build_entity_wikilink_map, href_to_wikilink
+from entity_wikilink import build_entity_wikilink_map, build_redirect_wikilink_map
+from entity_wikilink import href_to_wikilink, href_to_entity
 from entity_mentions import get_plain_text, get_plain_text_mention_info
 from depparse import depparse_paragraph, vertices_route_to_deproute
 from depparse import get_token_id_list_by_mention, restore_sentence_from_tokens
@@ -35,18 +41,14 @@ from depparse import find_sentence_by_offset, get_sentence_id
 from dijkstra import dijkstra_path_for_regions
 
 def process_paragraph_single_entity(sentences, mentions,
-        wikilink_to_entity, entity_to_wikilink, outfile):
+        wikilink_to_entity, entity_to_wikilink, redirect_map,
+        outfile):
     # formatted output each entity mention
     syslog = xuxian.log.system_logger
     Dict = xuxian.log.LogDict
     for (mstart, mend, href, string) in mentions:
-        wikilink = href_to_wikilink(href)
-        if wikilink not in wikilink_to_entity:
-            # TODO: print error
-            syslog.debug('empty string:' +
-                    str(Dict({'href':href.encode('utf-8'), 'wikilink':'wikilink',
-                'mention':string.encode('utf-8')})))
-            continue
+        entity = href_to_entity(href, wikilink_to_entity, redirect_map)
+        if not entity: continue
 
         # get the sentence id and its offset in the paragraph line
         sentence_id = get_sentence_id(sentences, mstart, mend)
@@ -59,8 +61,7 @@ def process_paragraph_single_entity(sentences, mentions,
         # Finally, the output offset of a mention should be based on the
         # sentence itself rather than the whole line paragraph.
         outfile.info(u"{0}\t{1}\t{2}\t{3}\t{4}".format(
-                wikilink_to_entity[wikilink],
-                href,
+                entity, href,
                 mstart - sentence_offset, mend - sentence_offset,
                 find_sentence_by_offset(sentences, mstart, mend)
                 ))
@@ -87,7 +88,8 @@ def mention_pairs(mentions):
         yield ((m1, t1), (m2, t2))
 
 def process_paragraph_multiple_entity(sentences, mentions,
-        wikilink_to_entity, entity_to_wikilink, outfile):
+        wikilink_to_entity, entity_to_wikilink, redirect_map,
+        outfile):
     """
     To produce a deproute between any two of the entities in a sentence.
     Produce each line: entity1, entity2, deproute, and sentence separated by tab
@@ -116,10 +118,9 @@ def process_paragraph_multiple_entity(sentences, mentions,
                 'mentions=' + str(mentions))
 
         for ((m1, t1), (m2, t2)) in mention_pairs(mentions):
-            wikilink1, wikilink2 = href_to_wikilink(m1[2]), href_to_wikilink(m2[2])
-            if (wikilink1 not in wikilink_to_entity
-                    or wikilink2 not in wikilink_to_entity):
-                continue
+            e1 = href_to_entity(m1[2], wikilink_to_entity, redirect_map)
+            e2 = href_to_entity(m2[2], wikilink_to_entity, redirect_map)
+            if not e1 or not e2: continue
 
             mindist, minroute = dijkstra_path_for_regions(t1, t2,
                     tokens, sentence_edges[sentence_id].keys())
@@ -140,10 +141,8 @@ def process_paragraph_multiple_entity(sentences, mentions,
             syslog.debug('----------------------------------------------------')
 
             outfile.info(u"{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}".format(
-                wikilink_to_entity[wikilink1], m1[2],
-                m1[0] - sentence_offset, m1[1] - sentence_offset,
-                wikilink_to_entity[wikilink2], m2[2],
-                m2[0] - sentence_offset, m2[1] - sentence_offset,
+                e1, m1[2], m1[0] - sentence_offset, m1[1] - sentence_offset,
+                e2, m2[2], m2[0] - sentence_offset, m2[1] - sentence_offset,
                 deproute_string, restore_sentence_from_tokens(tokens)
                 ).encode('utf-8'))
     pass
@@ -159,11 +158,16 @@ def main(args):
     syslog.info('loading wikiline2entity file....')
     wikilink_to_entity, entity_to_wikilink = build_entity_wikilink_map(
             charset_wrapper(open(args.entity_wiki_file)))
-    syslog.info('finished loading wikiline2entity file')
+    syslog.info('loading redirect file....')
+    redirect_map = build_redirect_wikilink_map(
+            charset_wrapper(open(args.wiki_redirect_file)))
+    syslog.info('finished init global object')
 
     # init output dump file
-    entity_sentence_outfile = xuxian.apply_dump_file('entity-sentence',
-            args.entity_sentence_output_file)
+    entity_outfile = xuxian.apply_dump_file('entity',
+            args.single_entity_output_file)
+    entity_pair_outfile = xuxian.apply_dump_file('entity-pair',
+            args.entity_pair_output_file)
 
     # iterate over data input
     for doc in docs:
@@ -191,15 +195,13 @@ def main(args):
 
             sentences = depparsed_output[u'sentences']
 
-            """
             process_paragraph_single_entity(sentences, mentions,
-                    wikilink_to_entity, entity_to_wikilink,
-                    entity_sentence_outfile)
-            """
+                    wikilink_to_entity, entity_to_wikilink, redirect_map,
+                    entity_outfile)
 
             process_paragraph_multiple_entity(sentences, mentions,
-                    wikilink_to_entity, entity_to_wikilink,
-                    entity_sentence_outfile)
+                    wikilink_to_entity, entity_to_wikilink, redirect_map,
+                    entity_pair_outfile)
 
             xuxian.remember(args.task_id, doc['id'] + str(lineno))
 

@@ -1,15 +1,16 @@
 #!/bin/bash
 
-rm -rf log/state
-rm -f $2
+rm -rf log/state log/single-output log/pair-output
 mkdir -p log/state
 
-python $4 main.py \
+python $3 main.py \
     --sys-log-path log \
     --state-path log/state \
     --wiki-file $1 \
     --entity-wiki-file /home/zxteloiv/data/kbc/mid2wiki.txt \
-    --entity-sentence-output-file $2 \
-    --task-id $3 \
+    --single-entity-output-file log/single-output \
+    --entity-pair-output-file log/pair-output \
+    --task-id $2 \
     --log-level DEBUG \
+    --wiki-redirect-file /home/zxteloiv/data/kbc/enwiki-20160113/redirect_title \
 
