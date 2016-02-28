@@ -54,8 +54,10 @@ def get_plain_text_mention_info(text, offset=0):
         cursor += preceding_len
         plain_mention_cursor += preceding_len
 
-        # append new plain mention info
-        plain_mentions.append((plain_mention_cursor, # plain mention start
+        # append new plain mention info, only when mention is not empty
+        # but the cursor computation is still necessary
+        if len(mention_repr) > 0:
+            plain_mentions.append((plain_mention_cursor, # plain mention start
                 plain_mention_cursor + len(mention_repr), # plain mention end
                 entity, mention_repr)) # entity link and entity mention
 

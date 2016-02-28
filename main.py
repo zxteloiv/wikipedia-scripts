@@ -218,7 +218,7 @@ def main(args):
                     wikilink_to_entity, entity_to_wikilink, redirect_map,
                     entity_pair_outfile)
 
-            xuxian.remember(args.task_id, doc['title'] + str(lineno))
+            xuxian.remember(args.task_id, (doc['title'] + unicode(lineno)).encode('utf-8'))
 
 if __name__ == "__main__":
     xuxian.parse_args()
