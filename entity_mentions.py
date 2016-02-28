@@ -3,7 +3,7 @@
 
 import re
 
-ENTITY_MENTION_RE = re.compile('<a href="([^"]+)">(.*?)</a>')
+ENTITY_MENTION_RE = re.compile('<a href="(.*?)">(.*?)</a>')
 
 def get_entity_mentions(text, offset=0):
     """

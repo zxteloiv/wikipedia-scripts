@@ -82,9 +82,14 @@ def get_token_id_list_by_mention(sentence, mstart, mend):
         if mstart <= tstart and tend <= mend:
             token_id_list.append(i)
 
+        # if a token and a mention overlap, that token is added
+        # ----(token===(men==)====tion)---
+        if mstart < tend and tstart < mend:
+            token_id_list.append(i)
+
         # token is iterated beyond the current mention, quickly break
         # ----(mention)---(tokens)----
-        if mend < tstart:
+        if mend <= tstart:
             break
 
     return token_id_list

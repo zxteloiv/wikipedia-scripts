@@ -97,6 +97,18 @@ def process_paragraph_multiple_entity(sentences, mentions,
     syslog = xuxian.log.system_logger
 
     sentence_to_mention = build_sentence_to_mention_table(sentences, mentions)
+    syslog.debug("-=-=-=-=-=-=-=-= sentence tokens =-=-=-=-=-=-=-=-\n" + "\n".join(
+            "{0}\t{1}\t{2}\t{3}\t{4}".format(
+                sid, tid, t['characterOffsetBegin'], t['characterOffsetEnd'],
+                t['originalText'].encode('utf-8')
+                ) for sid in xrange(len(sentences))
+            for tid, t in enumerate(sentences[sid]['tokens'])
+            ))
+    syslog.debug('-=-=-=-=-=-=-=-= mentions =-=-=-=-=-=-=-=-=-\n' + '\n'.join(
+        "{0}\t{1}\t{2}\t{3}".format(
+            m[0], m[1], m[2].encode('utf-8'), m[3].encode('utf-8')
+            ) for m in mentions
+        ))
     syslog.debug('sentence_to_mention=' + (
         " ".join(str(i) + '=>' + str(x) for (i, x) in enumerate(sentence_to_mention))
         ))
@@ -171,9 +183,10 @@ def main(args):
 
     # iterate over data input
     for doc in docs:
+        syslog.info('to process doc_title=' + doc['title'].encode('utf-8'))
         for (lineno, line) in enumerate(doc['text']):
             # at the correct time point, clear the recovery state
-            if recovery_state == doc['id'] + str(lineno):
+            if recovery_state == doc['title'] + str(lineno):
                 recovery_state = None
             if recovery_state is not None:
                 continue
@@ -195,6 +208,8 @@ def main(args):
 
             sentences = depparsed_output[u'sentences']
 
+            syslog.debug('to process doc_title=' + doc['title'].encode('utf-8')
+                    + '\tdoc_line=' + plaintext[:80].encode('utf-8'))
             process_paragraph_single_entity(sentences, mentions,
                     wikilink_to_entity, entity_to_wikilink, redirect_map,
                     entity_outfile)
@@ -203,9 +218,7 @@ def main(args):
                     wikilink_to_entity, entity_to_wikilink, redirect_map,
                     entity_pair_outfile)
 
-            xuxian.remember(args.task_id, doc['id'] + str(lineno))
-
-        break
+            xuxian.remember(args.task_id, doc['title'] + str(lineno))
 
 if __name__ == "__main__":
     xuxian.parse_args()

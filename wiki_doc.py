@@ -3,7 +3,8 @@
 
 import re
 
-DOC_START_PATTERN = re.compile('<doc id="(\d+)" url="([^"]+)" title="([^"]+)"')
+DOC_START_PATTERN = re.compile(
+    '<doc( id="(\d+)")?( url="([^"]+)")?( title="([^"]+))?"')
 DOC_END_PATTERN = re.compile('</doc>')
 
 def wikiobj_to_doc(wikiobj):
@@ -13,15 +14,18 @@ def wikiobj_to_doc(wikiobj):
     doc_obj = {}
 
     for line in wikiobj:
+        line = line.rstrip()
+        if not line:
+            continue
 
         if state_out_of_doc:
             m = DOC_START_PATTERN.match(line)
             if m:
                 state_out_of_doc = False
                 doc_obj = {}
-                doc_obj['id'] = m.group(1)
-                doc_obj['url'] = m.group(2)
-                doc_obj['title'] = m.group(3)
+                doc_obj['id'] = m.group(2)
+                doc_obj['url'] = m.group(4)
+                doc_obj['title'] = m.group(6)
                 doc_obj['text'] = []
                 continue
 
