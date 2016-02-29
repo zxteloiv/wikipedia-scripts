@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf log/state log/single-output log/pair-output
+rm -rf log/state/$2 log/single-output log/pair-output
 mkdir -p log/state
 
 python $3 main.py \
@@ -11,6 +11,6 @@ python $3 main.py \
     --single-entity-output-file log/single-output \
     --entity-pair-output-file log/pair-output \
     --task-id $2 \
-    --log-level DEBUG \
+    --log-level INFO \
     --wiki-redirect-file /home/zxteloiv/data/kbc/enwiki-20160113/redirect_title \
 

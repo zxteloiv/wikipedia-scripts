@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf log/state log/single-output log/pair-output
+#rm -rf log/state log/single-output log/pair-output
 mkdir -p log/state
 
 if [ $# -lt 1 ]; then
