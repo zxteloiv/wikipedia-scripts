@@ -35,7 +35,6 @@ from entity_mentions import get_plain_text, get_plain_text_mention_info
 from depparse import depparse_paragraph, vertices_route_to_deproute
 from depparse import get_token_id_list_by_mention, restore_sentence_from_tokens
 from depparse import find_sentence_by_offset, get_sentence_id
-from dijkstra import dijkstra_path_for_regions
 
 def build_sentence_to_mention_table(sentences, mentions):
     # prepare the lookup structure
@@ -75,6 +74,13 @@ def process_paragraph(sentences, mentions,
         " ".join(str(i) + '=>' + str(x) for (i, x) in enumerate(sentence_to_mention))
         ))
 
+    def get_output_entity_mention_token(mentions):
+        for mention, token_list in mentions:
+            entity = href_to_entity(mention[2], wikilink_to_entity, redirect_map)
+            if not entity: continue
+
+            yield entity, mention[0], mention[1]
+
     for sentence_id in xrange(len(sentence_to_mention)):
         mentions = sentence_to_mention[sentence_id]
         if len(mentions) <= 1:
@@ -89,17 +95,10 @@ def process_paragraph(sentences, mentions,
 
         outfile.info((u"s\t" + sentence_content).encode('utf-8'))
 
-        outfile.info((u"m\t" + u"\t".join(
-            x[0], x[1] - sentence_offset, x[2] - sentence_offset
+        outfile.info((u"m\t" + u"\t".join(u"{0},{1},{2}".format(
+            x[0], x[1] - sentence_offset, x[2] - sentence_offset)
             for x in get_output_entity_mention_token(mentions)
             )).encode('utf-8'))
-
-def get_output_entity_mention_token(mentions):
-    for mention, token_list in mentions:
-        entity = href_to_entity(mention, wikilink_to_entity, redirect_map)
-        if not entity: continue
-
-        yield entity, mention[0], mention[1]
 
 def tokenize_paragraph(para, nlp, response_encoding=None):
     return nlp.annotate(para.encode('utf-8'),
@@ -124,7 +123,7 @@ def main(args):
 
     # init output dump file
     entity_outfile = xuxian.apply_dump_file('entity',
-            args.single_entity_output_file)
+            args.entity_output_file)
 
     # iterate over data input
     for doc in docs:
@@ -158,7 +157,7 @@ def main(args):
 
             process_paragraph(sentences, mentions,
                     wikilink_to_entity, entity_to_wikilink, redirect_map,
-                    entity_pair_outfile)
+                    entity_outfile)
 
             xuxian.remember(args.task_id, (doc['title'] + unicode(lineno)).encode('utf-8'))
 
