@@ -23,7 +23,7 @@ def href_to_wikilink(href):
     return upper_first_letter(href.replace(u' ', u'_'))
 
 def upper_first_letter(text):
-    return text[0].upper() + text[1:]
+    return text[0].upper() + text[1:] if text else ""
 
 def build_redirect_wikilink_map(obj):
     redirect = dict()
