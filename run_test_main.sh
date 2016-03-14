@@ -6,6 +6,7 @@ mkdir -p log/state
 python $3 main.py \
     --sys-log-path log \
     --state-path log/state \
+    --redis-server "172.18.28.118" \
     --wiki-file $1 \
     --entity-wiki-file /home/zxteloiv/data/kbc/mid2wiki.txt \
     --single-entity-output-file log/single-output \

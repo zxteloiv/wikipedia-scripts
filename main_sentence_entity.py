@@ -7,6 +7,7 @@ for lib in os.listdir('./lib'):
     sys.path.insert(1, './lib/' + lib)
 
 import re
+import redis
 from itertools import permutations
 import xuxian
 
@@ -16,6 +17,10 @@ parser.add_argument('--wiki-file', required=True,
         help='the /path/to/name of the wiki file to process')
 parser.add_argument('--nlp-server', default='127.0.0.1')
 parser.add_argument('--nlp-port', default=9000)
+
+parser.add_argument('--redis-server', default='127.0.0.1')
+parser.add_argument('--redis-port', default=6379)
+parser.add_argument('--redis-db', default=0)
 
 parser.add_argument('--entity-wiki-file', required=True,
         help='freebase node and wikipedia map file, first column is '
@@ -29,7 +34,6 @@ parser.add_argument('--entity-output-file', required=True,
 
 from wiki_doc import wikiobj_to_doc
 from utils import charset_wrapper, init_corenlp
-from entity_wikilink import build_entity_wikilink_map, build_redirect_wikilink_map
 from entity_wikilink import href_to_wikilink, href_to_entity
 from entity_mentions import get_plain_text, get_plain_text_mention_info
 from depparse import depparse_paragraph, vertices_route_to_deproute
@@ -48,13 +52,7 @@ def build_sentence_to_mention_table(sentences, mentions):
 
     return sentence_to_mention
 
-def process_paragraph(sentences, mentions,
-        wikilink_to_entity, entity_to_wikilink, redirect_map,
-        outfile):
-    """
-    To produce a deproute between any two of the entities in a sentence.
-    Produce each line: entity1, entity2, deproute, and sentence separated by tab
-    """
+def process_paragraph(sentences, mentions, robj, outfile):
     syslog = xuxian.log.system_logger
 
     sentence_to_mention = build_sentence_to_mention_table(sentences, mentions)
@@ -76,7 +74,7 @@ def process_paragraph(sentences, mentions,
 
     def get_output_entity_mention_token(mentions):
         for mention, token_list in mentions:
-            entity = href_to_entity(mention[2], wikilink_to_entity, redirect_map)
+            entity = href_to_entity(mention[2], redis_obj=robj)
             if not entity: continue
 
             yield entity, mention[0], mention[1]
@@ -113,13 +111,8 @@ def main(args):
     # init global object
     docs = wikiobj_to_doc(charset_wrapper(open(args.wiki_file)))
     nlp = init_corenlp(args.nlp_server, args.nlp_port)
-    syslog.info('loading wikiline2entity file....')
-    wikilink_to_entity, entity_to_wikilink = build_entity_wikilink_map(
-            charset_wrapper(open(args.entity_wiki_file)))
-    syslog.info('loading redirect file....')
-    redirect_map = build_redirect_wikilink_map(
-            charset_wrapper(open(args.wiki_redirect_file)))
-    syslog.info('finished init global object')
+    robj = redis.StrictRedis(host=args.redis_server, port=args.redis_port,
+            db=args.redis_db)
 
     # init output dump file
     entity_outfile = xuxian.apply_dump_file('entity',
@@ -155,9 +148,7 @@ def main(args):
             syslog.debug('to process doc_title=' + doc['title'].encode('utf-8')
                     + '\tdoc_line=' + plaintext[:80].encode('utf-8'))
 
-            process_paragraph(sentences, mentions,
-                    wikilink_to_entity, entity_to_wikilink, redirect_map,
-                    entity_outfile)
+            process_paragraph(sentences, mentions, robj, entity_outfile)
 
             xuxian.remember(args.task_id, (doc['title'] + unicode(lineno)).encode('utf-8'))
 

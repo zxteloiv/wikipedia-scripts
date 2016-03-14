@@ -7,6 +7,7 @@ for lib in os.listdir('./lib'):
     sys.path.insert(1, './lib/' + lib)
 
 import re
+import redis
 from itertools import permutations
 import xuxian
 
@@ -16,6 +17,10 @@ parser.add_argument('--wiki-file', required=True,
         help='the /path/to/name of the wiki file to process')
 parser.add_argument('--nlp-server', default='127.0.0.1')
 parser.add_argument('--nlp-port', default=9000)
+
+parser.add_argument('--redis-server', default='127.0.0.1')
+parser.add_argument('--redis-port', default=6379)
+parser.add_argument('--redis-db', default=0)
 
 parser.add_argument('--entity-wiki-file', required=True,
         help='freebase node and wikipedia map file, first column is '
@@ -32,7 +37,6 @@ parser.add_argument('--entity-pair-output-file', required=True,
 
 from wiki_doc import wikiobj_to_doc
 from utils import charset_wrapper, init_corenlp
-from entity_wikilink import build_entity_wikilink_map, build_redirect_wikilink_map
 from entity_wikilink import href_to_wikilink, href_to_entity
 from entity_mentions import get_plain_text, get_plain_text_mention_info
 from depparse import depparse_paragraph, vertices_route_to_deproute
@@ -40,14 +44,12 @@ from depparse import get_token_id_list_by_mention, restore_sentence_from_tokens
 from depparse import find_sentence_by_offset, get_sentence_id
 from dijkstra import dijkstra_path_for_regions
 
-def process_paragraph_single_entity(sentences, mentions,
-        wikilink_to_entity, entity_to_wikilink, redirect_map,
-        outfile):
+def process_paragraph_single_entity(sentences, mentions, robj, outfile):
     # formatted output each entity mention
     syslog = xuxian.log.system_logger
     Dict = xuxian.log.LogDict
     for (mstart, mend, href, string) in mentions:
-        entity = href_to_entity(href, wikilink_to_entity, redirect_map)
+        entity = href_to_entity(href, redis_obj=robj)
         if not entity: continue
 
         # get the sentence id and its offset in the paragraph line
@@ -87,9 +89,7 @@ def mention_pairs(mentions):
         processed.add((m1, m2))
         yield ((m1, t1), (m2, t2))
 
-def process_paragraph_multiple_entity(sentences, mentions,
-        wikilink_to_entity, entity_to_wikilink, redirect_map,
-        outfile):
+def process_paragraph_multiple_entity(sentences, mentions, robj, outfile):
     """
     To produce a deproute between any two of the entities in a sentence.
     Produce each line: entity1, entity2, deproute, and sentence separated by tab
@@ -130,8 +130,8 @@ def process_paragraph_multiple_entity(sentences, mentions,
                 'mentions=' + str(mentions))
 
         for ((m1, t1), (m2, t2)) in mention_pairs(mentions):
-            e1 = href_to_entity(m1[2], wikilink_to_entity, redirect_map)
-            e2 = href_to_entity(m2[2], wikilink_to_entity, redirect_map)
+            e1 = href_to_entity(m1[2], redis_obj=robj)
+            e2 = href_to_entity(m2[2], redis_obj=robj)
             if not e1 or not e2: continue
 
             mindist, minroute = dijkstra_path_for_regions(t1, t2,
@@ -167,13 +167,8 @@ def main(args):
     # init global object
     docs = wikiobj_to_doc(charset_wrapper(open(args.wiki_file)))
     nlp = init_corenlp(args.nlp_server, args.nlp_port)
-    syslog.info('loading wikiline2entity file....')
-    wikilink_to_entity, entity_to_wikilink = build_entity_wikilink_map(
-            charset_wrapper(open(args.entity_wiki_file)))
-    syslog.info('loading redirect file....')
-    redirect_map = build_redirect_wikilink_map(
-            charset_wrapper(open(args.wiki_redirect_file)))
-    syslog.info('finished init global object')
+    robj = redis.StrictRedis(host=args.redis_server, port=args.redis_port,
+            db=args.redis_db)
 
     # init output dump file
     entity_outfile = xuxian.apply_dump_file('entity',
@@ -211,12 +206,10 @@ def main(args):
             syslog.debug('to process doc_title=' + doc['title'].encode('utf-8')
                     + '\tdoc_line=' + plaintext[:80].encode('utf-8'))
             process_paragraph_single_entity(sentences, mentions,
-                    wikilink_to_entity, entity_to_wikilink, redirect_map,
-                    entity_outfile)
+                    robj, entity_outfile)
 
             process_paragraph_multiple_entity(sentences, mentions,
-                    wikilink_to_entity, entity_to_wikilink, redirect_map,
-                    entity_pair_outfile)
+                    robj, entity_pair_outfile)
 
             xuxian.remember(args.task_id, (doc['title'] + unicode(lineno)).encode('utf-8'))
 
