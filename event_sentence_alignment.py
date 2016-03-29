@@ -12,9 +12,7 @@ from itertools import permutations
 import xuxian
 
 parser = xuxian.get_parser()
-parser.add_argument('--task-id', required=True, help='execution id')
-parser.add_argument('--wiki-file', required=True,
-        help='the /path/to/name of the wiki file to process')
+parser.add_argument('--task-id', default='testtask', help='execution id')
 parser.add_argument('--nlp-server', default='127.0.0.1')
 parser.add_argument('--nlp-port', default=9000)
 
@@ -22,6 +20,8 @@ parser.add_argument('--redis-server', default='127.0.0.1')
 parser.add_argument('--redis-port', default=6379)
 parser.add_argument('--redis-db', default=0)
 
+parser.add_argument('--key-schema-file', help='file of keys in event schema')
+parser.add_argument('--event-file', help='event instance file')
 parser.add_argument('--sentence-entity', help='wiki sentence and entity')
 parser.add_argument('--output-file')
 
@@ -60,21 +60,23 @@ def build_event_index(robj, event_schema, event_file):
         evtype = ev_data[0]
         try:
             # get the list of key properties contained in the event instance
-            keyprops = [k for (k, _) in (item.split(u'\t') for item in ev_data[1:])
-                    if evtype in event_schema and k in event_schema[evtype]]
+            keyprops = dict((k, v)
+                    for (k, v) in (item.split(u'\t') for item in ev_data[1:])
+                    if evtype in event_schema and k in event_schema[evtype])
         except Exception:
             continue
 
         if len(keyprops) < 2: # key properties must be at least 2
             continue
 
-        event = {'id': ev_id, 'type': evtype}
-        event.update(kvpair.split('\t')[1] for kvpair in ev_data[1:])
+        event = {u'id': ev_id, u'type': evtype}
+        event.update(kvpair.split(u'\t') for kvpair in ev_data[1:])
 
-        rkey = 'ev_' + ''.join(x.decode('utf-8') for x in event_schema[evtype])
-        rval = json.encode(event)
+        rkey = 'ev_' + ''.join(x[1].encode('utf-8') for x in keyprops.items())
+        rval = json.dumps(event)
 
-        robj.set(rkey, rval)
+        #robj.set(rkey, rval)
+        print rkey + '\t' + rval
 
 def mention_pairs(mentions):
     """
@@ -104,6 +106,9 @@ def main(args):
 
     # init output dump file
     #entity_outfile = xuxian.apply_dump_file('entity', args.single_entity_output_file)
+
+    event_schema = build_key_properties_table(args.key_schema_file)
+    build_event_index(robj, event_schema, args.event_file)
 
     # iterate over data input
     pass
