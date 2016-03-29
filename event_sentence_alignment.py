@@ -75,8 +75,8 @@ def build_event_index(robj, event_schema, event_file):
         rkey = 'ev_' + ''.join(x[1].encode('utf-8') for x in keyprops.items())
         rval = json.dumps(event)
 
-        #robj.set(rkey, rval)
-        print rkey + '\t' + rval
+        robj.set(rkey, rval)
+        #print rkey + '\t' + rval
 
 def mention_pairs(mentions):
     """
