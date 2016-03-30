@@ -50,7 +50,7 @@ def build_event_index(robj, event_schema, event_file):
     """
     Read every event instance in the event_file, if it is valid by referring to 
     the event schema, write it into redis as:
-        key = "ev_" + key_prop_1 + key_prop_2
+        key = evtype + key_prop_1 + key_prop_2
         val = event { id:ev_id, type:evtype, prop1:val1, prop2:val2, ... }
     """
     events = json.loads(open(event_file).read())
@@ -72,11 +72,11 @@ def build_event_index(robj, event_schema, event_file):
         event = {u'id': ev_id, u'type': evtype}
         event.update(kvpair.split(u'\t') for kvpair in ev_data[1:])
 
-        rkey = 'ev_' + ''.join(x[1].encode('utf-8') for x in keyprops.items())
+        rkey = evtype.encode('utf-8') + ''.join(x[1].encode('utf-8') for x in keyprops.items())
         rval = json.dumps(event)
 
-        robj.set(rkey, rval)
-        #print rkey + '\t' + rval
+        rtn = robj.set(rkey, rval)
+        print str(rtn) + '\t' + rkey + '\t' + rval
 
 def mention_pairs(mentions):
     """
