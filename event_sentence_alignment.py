@@ -100,41 +100,84 @@ def build_event_index(robj, event_schema, string_to_mid, event_file):
         rtn = robj.set(rkey, rval)
         print str(rtn) + '\t' + rkey + '\t' + rval
 
-def mention_pairs(mentions):
-    """
+def enumerate_rkeys(types, mentions):
     processed = set()
-    for ((m1, t1), (m2, t2)) in permutations(mentions, 2):
-        if m1 == m2 or (m1, m2) in processed or (m2, m1) in processed:
+    for m1, m2 in permutations(mentions, 2):
+        if m1[0] == m2[0] or (m1[0], m2[0]) in processed or (m2[0], m1[0]) in processed:
             continue
 
-        processed.add((m1, m2))
-        yield ((m1, t1), (m2, t2))
-    """
-    pass
+        processed.add((m1[0], m2[0]))
+        for evtype in types:
+            yield evtype, m1, m2
 
 def sentence_reader(fileobj):
-    pass
+    sentence, mentions = None, []
+    for line in fileobj:
+        parts = line.rstrip().split(u'\t')
+        if len(parts) <= 1:
+            continue
 
-def process_paragraph_multiple_entity(sentences, mentions, robj, outfile):
-    pass
+        if parts[0] == u's':
+            if sentence is not None and len(mentions) > 0:
+                yield (sentence, mentions)
+            sentence = parts[1]
+            mentions = []
+        elif parts[0] == u'm' and parts[1] != u'':
+            mentions = [tuple(m.split(u',')) for m in parts[1:]]
+
+    yield (sentence, mentions)
+
+def output_ev_context(outfile, sentence, mention_pos, event):
+    outfile.info('s\t' + sentence.encode('utf-8'))
+    outfile.info((event[u'id'] + u'\t' + u'\t'.join(
+        u",".join(
+            (prop, val, mention_pos[val][0], mention_pos[val][1])
+            if val in mention_pos
+            else (prop, val, str(sentence.find(val)), str(sentence.find(val) + len(val)))
+            )
+        for prop, val in event.iteritems()
+        if (prop not in (u'id', u'type')) and ((val in mention_pos) or (val in sentence))
+        )).encode('utf-8'))
+
+def find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, sentence_entity_file):
+    evtypes = event_schema.keys()
+    for sentence, mentions in sentence_reader(charset_wrapper(open(sentence_entity_file))):
+
+        mention_pos = dict((m[0], (m[1], m[2])) for m in mentions)
+
+        rkeys = [make_rkey(evtype, (m1[0], m2[0])) for evtype, m1, m2 in enumerate_rkeys(evtypes, mentions)]
+        for rkey in rkeys:
+            data = robj.get(rkey)
+            if data is None:
+                continue
+
+            evdata = json.loads(data)
+            output_ev_context(outfile, sentence, mention_pos, evdata)
 
 def main(args):
     recovery_state = xuxian.recall(args.task_id)
     syslog = xuxian.log.system_logger
 
     # init global object
+    syslog.info('init redis object...')
     robj = redis.StrictRedis(host=args.redis_server, port=args.redis_port,
             db=args.redis_db)
 
     # init output dump file
-    #entity_outfile = xuxian.apply_dump_file('entity', args.single_entity_output_file)
+    syslog.info('init output object...')
+    outfile = xuxian.apply_dump_file('entity', args.output_file)
 
+    syslog.info('init key properties...')
     event_schema = build_key_properties_table(args.key_schema_file)
+    syslog.info('init string to mid table....')
     string_to_mid = build_string_mid_table(args.mid_entity_file)
-    build_event_index(robj, event_schema, string_to_mid, args.event_file)
+    #syslog.info('write to redis....')
+    #build_event_index(robj, event_schema, string_to_mid, args.event_file)
+
+    syslog.info('init completed, now iterate over data...')
 
     # iterate over data input
-    pass
+    find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, args.sentence_entity)
 
 if __name__ == "__main__":
     xuxian.parse_args()
