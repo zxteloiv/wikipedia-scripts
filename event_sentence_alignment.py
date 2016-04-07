@@ -74,7 +74,7 @@ def build_event_index(robj, event_schema, string_to_mid, event_file):
         evtype = ev_data[0]
         try:
             # get the list of key properties contained in the event instance
-            keyprops = dict((k, string_to_mid[v] if v in string_to_mid else v)
+            keyprops = list((k, string_to_mid[v] if v in string_to_mid else v)
                     for (k, v) in (item.split(u'\t') for item in ev_data[1:])
                     if evtype in event_schema and k in event_schema[evtype])
         except Exception:
@@ -94,7 +94,7 @@ def build_event_index(robj, event_schema, string_to_mid, event_file):
                 if evtype in event_schema and k in event_schema[evtype]):
             syslog.info(ev_id.encode('utf-8') + "\tkeynotfound\t" + str(keyprops))
 
-        rkey = make_rkey(evtype, keyprops.values())
+        rkey = make_rkey(evtype, list(x[1] for x in keyprops))
         rval = json.dumps(event)
 
         rtn = robj.set(rkey, rval)
