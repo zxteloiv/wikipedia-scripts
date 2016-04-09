@@ -63,8 +63,7 @@ def build_event_index(robj, event_schema, string_to_mid, event_file):
     Read every event instance in the event_file, if it is valid by referring to 
     the event schema, write it into redis as:
         key = evtype + key_prop_1 + key_prop_2
-        val = event { id:ev_id, type:evtype, prop1:val1, prop2:val2, ... }
-
+        val = event { id:ev_id, type:evtype, properties: [(p1, v1), (p2, v2), ...]}
     """
     events = json.loads(open(event_file).read())
     syslog = xuxian.log.system_logger
@@ -72,11 +71,17 @@ def build_event_index(robj, event_schema, string_to_mid, event_file):
         if len(ev_data) <= 1:
             continue
         evtype = ev_data[0]
+        if evtype not in event_schema: continue
         try:
             # get the list of key properties contained in the event instance
+            """
             keyprops = list((k, string_to_mid[v] if v in string_to_mid else v)
                     for (k, v) in (item.split(u'\t') for item in ev_data[1:])
                     if evtype in event_schema and k in event_schema[evtype])
+                    """
+            keyprops = list((k, v)
+                    for (k, v) in (item.split(u'\t') for item in ev_data[1:])
+                    if k in event_schema[evtype] and v.startswith(u'm.'))
         except Exception:
             syslog.debug(ev_id.encode('utf-8') + "\tkeypropsfailure")
             continue
@@ -86,13 +91,7 @@ def build_event_index(robj, event_schema, string_to_mid, event_file):
             continue
 
         event = {u'id': ev_id, u'type': evtype}
-        event.update((k, string_to_mid[v] if v in string_to_mid else v)
-                for (k, v) in (kvpair.split(u'\t') for kvpair in ev_data[1:]))
-
-        if any(v not in string_to_mid
-                for (k, v) in (item.split(u'\t') for item in ev_data[1:])
-                if evtype in event_schema and k in event_schema[evtype]):
-            syslog.info(ev_id.encode('utf-8') + "\tkeynotfound\t" + str(keyprops))
+        event[u'properties'] = [kvpair.split(u'\t') for kvpair in ev_data[1:]]
 
         rkey = make_rkey(evtype, list(x[1] for x in keyprops))
         rval = json.dumps(event)
@@ -171,13 +170,13 @@ def main(args):
     event_schema = build_key_properties_table(args.key_schema_file)
     syslog.info('init string to mid table....')
     string_to_mid = build_string_mid_table(args.mid_entity_file)
-    #syslog.info('write to redis....')
-    #build_event_index(robj, event_schema, string_to_mid, args.event_file)
+    syslog.info('write to redis....')
+    build_event_index(robj, event_schema, string_to_mid, args.event_file)
 
     syslog.info('init completed, now iterate over data...')
 
     # iterate over data input
-    find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, args.sentence_entity)
+    #find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, args.sentence_entity)
 
 if __name__ == "__main__":
     xuxian.parse_args()
