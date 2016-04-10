@@ -134,8 +134,8 @@ def output_ev_context(outfile, sentence, mention_pos, event):
             if val in mention_pos
             else (prop, val, str(sentence.find(val)), str(sentence.find(val) + len(val)))
             )
-        for prop, val in event.iteritems()
-        if (prop not in (u'id', u'type')) and ((val in mention_pos) or (val in sentence))
+        for prop, val in event[u'properties']
+        if val in mention_pos or val in sentence
         )).encode('utf-8'))
 
 def find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, sentence_entity_file):
@@ -170,13 +170,13 @@ def main(args):
     event_schema = build_key_properties_table(args.key_schema_file)
     syslog.info('init string to mid table....')
     string_to_mid = build_string_mid_table(args.mid_entity_file)
-    syslog.info('write to redis....')
-    build_event_index(robj, event_schema, string_to_mid, args.event_file)
+    #syslog.info('write to redis....')
+    #build_event_index(robj, event_schema, string_to_mid, args.event_file)
 
     syslog.info('init completed, now iterate over data...')
 
     # iterate over data input
-    #find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, args.sentence_entity)
+    find_context_sentence_for_events(robj, outfile, event_schema, string_to_mid, args.sentence_entity)
 
 if __name__ == "__main__":
     xuxian.parse_args()
