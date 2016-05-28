@@ -30,15 +30,6 @@ for evtype in props_stat:
         compositions[evtype].append([x[0] for x in props])
 
 
-"""
-Every item in data is:
-
-(u'm.0ztvt6j',
- [u'sports.sports_team_roster',
-   u'sports.sports_team_roster.position\tPower forward',
-     u'sports.sports_team_roster.player\tRyan Perryman'])
-"""
-
 comp_stat = {}
 
 for line in open(sys.argv[2]):
