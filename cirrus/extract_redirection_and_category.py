@@ -31,7 +31,7 @@ def process_file(infile, rfile, cfile):
 
         if rfile:
             for x in page['redirects']:
-                rfile.write(x.encode('utf-8') + '\n')
+                rfile.write(x.encode('utf-8') + '\t' + page['title'].encode('utf-8') + '\n')
 
         # ns=14 is the namespace for Category, for more information,
         # refer to: https://www.mediawiki.org/wiki/Manual:Namespace
