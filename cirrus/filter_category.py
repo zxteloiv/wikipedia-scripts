@@ -5,6 +5,7 @@ import json
 import argparse
 import re, sys, os.path
 import logging
+import opencc
 
 class CategoryResources(object):
     def __init__(self, rfile, cfile):
@@ -71,6 +72,67 @@ class CategoryResources(object):
         res = [x[1] for x in self.cur.fetchall()]
         return res
 
+def traceroute(cr, categories, domain):
+    """
+    Find a possible route from any of the categories to the domain.
+    Code is copied and modified from the filter_category_kinship_by_domain function.
+    """
+    visited = set()
+
+    def redirect(c):
+        target = cr.query_category_redirect(c)
+        if target is None:
+            target = c
+        return target
+
+    buf = [[redirect(opencc.convert(c))] for c in categories]
+    while len(buf) > 0:
+        for path in buf:
+            if domain == path[-1]:
+                return path
+
+        visited.update(path[-1] for path in buf)
+        next_buf = []
+
+        for path in buf:
+            category = path[-1]
+            category = opencc.convert(category)
+            category = redirect(category)
+            uplevel_categories = cr.query_category_uplevel(category)
+            next_buf.extend(path + [c] for c in uplevel_categories if c not in visited)
+
+        buf = next_buf
+
+    return None
+
+def filter_category_kinship_by_domain(cr, categories, domain):
+    visited = set()
+
+    def redirect(c):
+        target = cr.query_category_redirect(c)
+        if target is None:
+            target = c
+        return target
+
+    buf = set(redirect(opencc.convert(x)) for x in categories)
+    while len(buf) > 0:
+        if domain in buf: return True
+        visited.update(buf)
+        next_buf = set()
+
+        #logging.debug('visited:' + repr(visited).decode('unicode_escape').encode('utf-8'))
+        logging.debug('buf:' + u','.join(buf).encode('utf-8'))
+
+        for category in buf:
+            category = opencc.convert(category)
+            category = redirect(category)
+            uplevel_categories = cr.query_category_uplevel(category)
+            next_buf.update(x for x in uplevel_categories if x not in visited)
+
+        buf = next_buf
+
+    return False
+
 def main():
     parser = argparse.ArgumentParser(description="read json and filter items by domain")
 
@@ -86,8 +148,17 @@ def main():
 
     cr = CategoryResources(rfile=args.category_redir_map, cfile=args.category_parent_map)
 
-    print cr.query_category_redirect(u'Fatty acids')
-    print repr(cr.query_category_uplevel(u'海岸山脉')).decode('unicode_escape')
+    print 'redirect: Fatty_acids ->', cr.query_category_redirect(u'Fatty acids')
+    print 'level up: 海岸山脉 ->', repr(cr.query_category_uplevel(u'海岸山脉')).decode('unicode_escape')
+
+    if filter_category_kinship_by_domain(cr, [u'海岸山脉'], u'宗教'):
+        print u'->'.join(traceroute(cr, [u'海岸山脉'], u'宗教')).encode('utf-8')
+
+    if filter_category_kinship_by_domain(cr, [u'海岸山脉'], u'加拿大'):
+        print u'->'.join(traceroute(cr, [u'海岸山脉'], u'加拿大')).encode('utf-8')
+
+    print filter_category_kinship_by_domain(cr, [u'各国墓葬'], u'宗教場所'), '各国墓葬 belongs to 宗教場所' 
+    print filter_category_kinship_by_domain(cr, [u'各国墓葬'], u'宗教场所'), '各国墓葬 belongs to 宗教场所' 
 
 if __name__ == "__main__":
     main()
