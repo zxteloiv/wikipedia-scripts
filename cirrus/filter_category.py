@@ -72,7 +72,7 @@ class CategoryResources(object):
         res = [x[1] for x in self.cur.fetchall()]
         return res
 
-def traceroute(cr, categories, domain):
+def traceroute(cr, categories, domain, max_len=12):
     """
     Find a possible route from any of the categories to the domain.
     Code is copied and modified from the filter_category_kinship_by_domain function.
@@ -87,7 +87,8 @@ def traceroute(cr, categories, domain):
         return target
 
     buf = [[redirect(opencc.convert(c))] for c in categories]
-    while len(buf) > 0:
+    layer = 0
+    while len(buf) > 0 and layer < max_len:
         for path in buf:
             if domain == path[-1]:
                 return path
@@ -103,10 +104,11 @@ def traceroute(cr, categories, domain):
             next_buf.extend(path + [c] for c in uplevel_categories if c not in visited)
 
         buf = next_buf
+        layer += 1
 
     return None
 
-def filter_category_kinship_by_domain(cr, categories, domain):
+def filter_category_kinship_by_domain(cr, categories, domain, max_len=12):
     visited = set()
     domain = opencc.convert(domain)
 
@@ -117,7 +119,8 @@ def filter_category_kinship_by_domain(cr, categories, domain):
         return target
 
     buf = set(redirect(opencc.convert(x)) for x in categories)
-    while len(buf) > 0:
+    layer = 0
+    while len(buf) > 0 and layer < max_len:
         if domain in buf: return True
         visited.update(buf)
         next_buf = set()
@@ -132,6 +135,7 @@ def filter_category_kinship_by_domain(cr, categories, domain):
             next_buf.update(x for x in uplevel_categories if x not in visited)
 
         buf = next_buf
+        layer += 1
 
     return False
 
