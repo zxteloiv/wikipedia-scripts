@@ -175,8 +175,9 @@ def filter_category_kinship_by_domain(cr, categories, domain, max_len=12):
     return False
 
 def filter_cirrus_category(args):
+    import datetime
     
-    cr = CategoryResources(rfile=args.category_redir_map, cfile=args.category_parent_map)
+    cr = CategoryResourcesPyNative(rfile=args.category_redir_map, cfile=args.category_parent_map)
     domain = args.domain.decode('utf-8')
     output = open(args.output, 'w')
     if args.input:
@@ -189,7 +190,7 @@ def filter_cirrus_category(args):
         for i, line in enumerate(open(f.rstrip())):
             page = json.loads(line.rstrip())
             if i % 1000 == 0:
-                logging.info("%s\t%d" %(f.rstrip(), i))
+                logging.info("%s\t%s\t%d" %(f.rstrip(), datetime.datetime.now().strftime('%Y%m%d%H%M%S'), i))
                 
             if filter_category_kinship_by_domain(cr, page['categories'], domain, max_len=10):
                 output.write(line)
