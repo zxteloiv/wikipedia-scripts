@@ -78,6 +78,7 @@ def traceroute(cr, categories, domain):
     Code is copied and modified from the filter_category_kinship_by_domain function.
     """
     visited = set()
+    domain = opencc.convert(domain)
 
     def redirect(c):
         target = cr.query_category_redirect(c)
@@ -107,6 +108,7 @@ def traceroute(cr, categories, domain):
 
 def filter_category_kinship_by_domain(cr, categories, domain):
     visited = set()
+    domain = opencc.convert(domain)
 
     def redirect(c):
         target = cr.query_category_redirect(c)
@@ -133,7 +135,7 @@ def filter_category_kinship_by_domain(cr, categories, domain):
 
     return False
 
-def main():
+def test():
     parser = argparse.ArgumentParser(description="read json and filter items by domain")
 
     parser.add_argument("input", help="input file")
@@ -161,5 +163,5 @@ def main():
     print filter_category_kinship_by_domain(cr, [u'各国墓葬'], u'宗教场所'), '各国墓葬 belongs to 宗教场所' 
 
 if __name__ == "__main__":
-    main()
+    test()
 
