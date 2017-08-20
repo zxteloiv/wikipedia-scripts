@@ -179,13 +179,20 @@ def filter_cirrus_category(args):
     cr = CategoryResources(rfile=args.category_redir_map, cfile=args.category_parent_map)
     domain = args.domain.decode('utf-8')
     output = open(args.output, 'w')
-    for i, line in enumerate(open(args.input)):
-        page = json.loads(line.rstrip())
-        if i % 10000:
-            logging.info(i * 10000)
-            
-        if filter_category_kinship_by_domain(cr, page['categories'], domain, max_len=10):
-            output.write(line)
+    if args.input:
+        filelist = [args.input]
+    else:
+        filelist = open(args.filelist)
+
+    for f in filelist:
+        f = f.rstrip()
+        for i, line in enumerate(open(f.rstrip())):
+            page = json.loads(line.rstrip())
+            if i % 1000 == 0:
+                logging.info("%s\t%d" %(f.rstrip(), i))
+                
+            if filter_category_kinship_by_domain(cr, page['categories'], domain, max_len=10):
+                output.write(line)
 
 def test(args):
     import datetime
