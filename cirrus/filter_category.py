@@ -213,6 +213,9 @@ def test(args):
     print filter_category_kinship_by_domain(cr, [u'各国墓葬'], u'宗教場所'), '各国墓葬 belongs to 宗教場所' 
     print filter_category_kinship_by_domain(cr, [u'各国墓葬'], u'宗教场所'), '各国墓葬 belongs to 宗教场所' 
 
+    print u'->'.join(traceroute(cr, ['2015年電影', u'日本电影', u'日語電影', u'松竹電影', u'日本战争片', u'太平洋战争电影', u'千代田區背景作品', u'非小說書籍改編電影', u'朝日電視台製作的電影', u'WOWOW製作的電影']
+, u'航天')).encode('utf-8')
+
 def main():
     parser = argparse.ArgumentParser(description="read json and filter items by domain")
 
