@@ -3,12 +3,19 @@
 import json
 import bz2
 
+import logging
+
 def reader_for_list(filelist):
     """
     a generator to read from multiple wikidata dump files
     """
+
     for filename in open(filelist):
-        yield reader(filename)
+        filename = filename.rstrip()
+        logging.debug(str(filename))
+    
+        for x in reader(filename):
+            yield x
 
 def reader(filename):
     """

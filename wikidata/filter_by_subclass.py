@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from .reader import reader
+from .reader import reader, reader_for_list
 import argparse, logging, json, datetime
 
 import opencc
@@ -78,6 +78,7 @@ def check_kinship_by_domain(ck, categories, domain, max_len=10):
 
 def build_kinship_by_domain(args):
 
+    logging.info('loading category file ' + args.category_file)
     ck = CategoryKinship(args.category_file)
     domain = args.domain
     kinships = set()
@@ -124,7 +125,8 @@ def find_entities_by_kinships(args, kinships):
 
     # iterate over the outputs
     output = open(args.output, 'w')
-    for i, entity in enumerate(reader(args.input)):
+    dataset = reader_for_list(args.input_filelist) if args.input_filelist else reader(args.input)
+    for i, entity in enumerate(dataset):
         if 'claims' not in entity: continue
         claims = entity['claims']
 
@@ -185,19 +187,25 @@ def test(args):
 
 def main():
     parser = argparse.ArgumentParser(description="extract class entity and subclass relation")
-    parser.add_argument("-i", "--input", help="input file name")
-    parser.add_argument("-c", "--category_file", help="input category file")
 
-    parser.add_argument("-o", "--output", help="output filename")
-    parser.add_argument("-s", "--category_sheet", help="category file")
+    groupK = parser.add_argument_group("Extract Category Kinships", "options related to kinship function")
+    groupK.add_argument("-c", "--category_file", help="input category file")
+    groupK.add_argument("-d", "--domain", help="filter domain")
+    groupK.add_argument("-s", "--category_sheet",
+            help="category file, input when `only` is set to entity, otherwise output")
+
+    groupE = parser.add_argument_group("Entity Extraction", "options related to entity extraction")
+    groupE.add_argument("-i", "--input", help="input file name, wikidata entity file")
+    groupE.add_argument("-l", "--input_filelist", help="a file containing a list of input filenames")
+    groupE.add_argument("-o", "--output", help="output filename")
+
+    groupM = parser.add_argument_group("Misc")
     parser.add_argument("--only", choices=['category', 'entity'],
             help="only build category kinship map, or only find entities by existing category kinships")
+    groupM.add_argument("-q", "--quiet", action="store_true", help="mute the log")
+    groupM.add_argument("--debug", action="store_true", help="open debug log")
+    groupM.add_argument("--test", action="store_true", help="run test rather than main entry")
 
-    parser.add_argument("-d", "--domain", help="filter domain")
-
-    parser.add_argument("-q", "--quiet", action="store_true", help="mute the log")
-    parser.add_argument("--debug", action="store_true", help="open debug log")
-    parser.add_argument("--test", action="store_true", help="run test rather than main entry")
     args = parser.parse_args()
 
     if not args.quiet:
