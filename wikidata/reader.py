@@ -3,6 +3,13 @@
 import json
 import bz2
 
+def reader_for_list(filelist):
+    """
+    a generator to read from multiple wikidata dump files
+    """
+    for filename in open(filelist):
+        yield reader(filename)
+
 def reader(filename):
     """
     a generator to read wikidata dump file
@@ -12,12 +19,19 @@ def reader(filename):
             ...
         ]
     """
-    with bz2.BZ2File(filename) as f:
-        f.readline() # escape the first line of '['
-        for l in f:
-            try:
-                yield json.loads(l.rstrip()[:-1])
-            except:
-                continue
+    if filename.endswith('.bz2'):
+        f = bz2.BZ2File(filename)
+    else:
+        f = open(filename)
+
+    for l in f:
+        try:
+            yield json.loads(l.rstrip().rstrip(','))
+        except:
+            # error occured when invalid data and json
+            # first and last line in the original full file are [ and ] respectively
+            continue
+
+    f.close()
             
 
