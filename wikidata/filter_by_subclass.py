@@ -76,7 +76,7 @@ def check_kinship_by_domain(ck, categories, domain, max_len=10):
 
     return False
 
-def filter_category_by_domain(args):
+def build_kinship_by_domain(args):
 
     ck = CategoryKinship(args.category_file)
     domain = args.domain
@@ -84,7 +84,7 @@ def filter_category_by_domain(args):
 
     logging.info('now building kinship set...')
     # find a kinship category map, and dump it to file when necessary
-    category_output = open(args.category_sheet_output, 'w') if args.category_sheet_output else None
+    category_output = open(args.category_sheet, 'w') if args.category_sheet else None
     for i, l in enumerate(open(args.category_file)):
         data = json.loads(l)
         category = data['id']
@@ -99,33 +99,9 @@ def filter_category_by_domain(args):
     if category_output is not None:
         category_output.close()
 
-    logging.info('all kinship category found: %d' % len(kinships))
+    logging.info('all category kinships found: %d' % len(kinships))
 
-    if args.category_only:
-        logging.info('Done. Skipping the entity finding step.')
-        return
-
-    logging.info('now filtering entities by kinships...')
-
-    # iterate over the outputs
-    output = open(args.output, 'w')
-    for i, entity in enumerate(reader(args.input)):
-        if 'claims' not in entity: continue
-        claims = entity['claims']
-
-        subclass_claims = claims['P279'] if 'P279' in claims else []
-        instance_claims = claims['P31'] if 'P31' in claims else []
-        if len(subclass_claims) + len(instance_claims) == 0: continue
-
-        categories = filter(lambda x: x is not None, (claim_value(claim) for claim in subclass_claims))
-        classes = filter(lambda x: x is not None, (claim_value(claim) for claim in instance_claims))
-
-        if any(x in kinships for x in categories + classes):
-            output.write(json.dumps(entity) + '\n')
-
-        if i % 20000 == 0:
-            logging.info('categories: %s, classes: %s' % (repr(categories), repr(classes)))
-            logging.info('%d entities iterated over: %s' % (i, datetime.datetime.now().strftime('%Y%m%d%H%M%S')))
+    return kinships
 
 def claim_value(claim):
     if 'mainsnak' not in claim: return None
@@ -142,6 +118,48 @@ def claim_value(claim):
         return 'Q' + value if value[0] != 'Q' else value
 
     return None
+
+def find_entities_by_kinships(args, kinships):
+    logging.info('now filtering entities by kinships...')
+
+    # iterate over the outputs
+    output = open(args.output, 'w')
+    for i, entity in enumerate(reader(args.input)):
+        if 'claims' not in entity: continue
+        claims = entity['claims']
+
+        subclass_claims = claims['P279'] if 'P279' in claims else [] # subclass_of
+        instance_claims = claims['P31'] if 'P31' in claims else [] # instance_of
+        if len(subclass_claims) + len(instance_claims) == 0: continue
+
+        categories = filter(lambda x: x is not None, (claim_value(claim) for claim in subclass_claims))
+        classes = filter(lambda x: x is not None, (claim_value(claim) for claim in instance_claims))
+
+        if any(x in kinships for x in categories + classes):
+            output.write(json.dumps(entity) + '\n')
+
+        if i % 20000 == 0:
+            logging.info('categories: %s, classes: %s' % (repr(categories), repr(classes)))
+            logging.info('%d entities iterated over: %s' % (i, datetime.datetime.now().strftime('%Y%m%d%H%M%S')))
+
+def filter_category_by_domain(args):
+
+    if args.only == "category":
+
+        kinships = build_kinship_by_domain(args)
+        logging.info('Done. Skipping the entity finding step.')
+        return
+
+    elif args.only == "entity":
+
+        kinships = set(json.loads(l)['id'] for l in open(args.category_sheet))
+        logging.info('loaded kinships from %s, count %d' % (args.category_sheet, len(kinships)))
+        find_entities_by_kinships(args, kinships)
+
+    else:
+        kinships = build_kinship_by_domain(args)
+        find_entities_by_kinships(args, kinships)
+
 
 def test(args):
     print 'before building:', datetime.datetime.now()
@@ -171,10 +189,9 @@ def main():
     parser.add_argument("-c", "--category_file", help="input category file")
 
     parser.add_argument("-o", "--output", help="output filename")
-    parser.add_argument("-s", "--category_sheet_output", help="input category file")
-    parser.add_argument("--category_only", action="store_true",
-            help="only build category kinship map, do not scan input file")
-
+    parser.add_argument("-s", "--category_sheet", help="category file")
+    parser.add_argument("--only", choices=['category', 'entity'],
+            help="only build category kinship map, or only find entities by existing category kinships")
 
     parser.add_argument("-d", "--domain", help="filter domain")
 
