@@ -117,9 +117,10 @@ def filter_category_by_domain(args):
         classes = filter(lambda x: x is not None, (claim_value(claim) for claim in instance_claims))
 
         if any(x in kinships for x in categories + classes):
-            output.write(l)
+            output.write(json.dumps(entity) + '\n')
 
         if i % 20000 == 0:
+            logging.info('categories: %s, classes: %s' % (repr(categories), repr(classes)))
             logging.info('%d entities iterated over: %s' % (i, datetime.datetime.now().strftime('%Y%m%d%H%M%S')))
 
 def claim_value(claim):

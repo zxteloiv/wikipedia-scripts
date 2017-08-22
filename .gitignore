@@ -65,7 +65,10 @@ target/
 *.log
 *.err
 *.out
-log
+log*
 run
 *.filelist*
 out
+tmp
+log
+
