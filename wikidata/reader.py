@@ -12,7 +12,7 @@ def reader_for_list(filelist):
 
     for filename in open(filelist):
         filename = filename.rstrip()
-        logging.debug(str(filename))
+        logging.info(str(filename))
     
         for x in reader(filename):
             yield x
