@@ -101,6 +101,10 @@ def filter_category_by_domain(args):
 
     logging.info('all kinship category found: %d' % len(kinships))
 
+    if args.category_only:
+        logging.info('Done. Skipping the entity finding step.')
+        return
+
     logging.info('now filtering entities by kinships...')
 
     # iterate over the outputs
@@ -168,6 +172,9 @@ def main():
 
     parser.add_argument("-o", "--output", help="output filename")
     parser.add_argument("-s", "--category_sheet_output", help="input category file")
+    parser.add_argument("--category_only", action="store_true",
+            help="only build category kinship map, do not scan input file")
+
 
     parser.add_argument("-d", "--domain", help="filter domain")
 
