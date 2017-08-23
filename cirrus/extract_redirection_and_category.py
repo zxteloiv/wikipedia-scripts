@@ -9,7 +9,7 @@ import logging
 
 def main():
     parser = argparse.ArgumentParser(description="Build redirects map and category hierarchy at the same time")
-    parser.add_argument("input", help="input file")
+    parser.add_argument("input", help="input file, processed data from `extract_cirrus` script")
     parser.add_argument("-r", "--redir_output", default="disable", help="redirects output filename")
     parser.add_argument("-c", "--category_output", default="disable", help="category hierarchy output filename")
     args = parser.parse_args()
