@@ -185,6 +185,10 @@ def test(args):
     print "\n====> composer -> astronaut"
     do_unit_test(u'Q36834', u'Q11631') # composer -> astronaut
 
+    print "\n====> Taiwanese opera -> physical object"
+    do_unit_test(u'Q31918', u'Q223557') 
+
+
 def main():
     parser = argparse.ArgumentParser(description="extract class entity and subclass relation")
 
