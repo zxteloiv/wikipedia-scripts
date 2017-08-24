@@ -65,7 +65,8 @@ def process_entities(args):
         title = cc.convert(title)
         text = title_text.get(title)
         if text is None:
-            logging.warning("specified title %s not found" % title.encode('utf-8'))
+            if title:
+                logging.warning("specified title %s not found" % title.encode('utf-8'))
             text = ""
         else:
             logging.debug("title %s found" % title.encode('utf-8'))
