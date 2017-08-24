@@ -9,7 +9,7 @@ cc = opencc.OpenCC()
 from utils.cirrus import load_redir_mapping, load_idx_mapping, redirect
 
 def bulk_query_wikipage(title_idx, titles, redir_idx={}):
-    filelist = set(filter(None, (title_idx.get(t) for t in titles)))
+    filelist = sorted(set(filter(None, (title_idx.get(t) for t in titles))))
     logging.info('there are %d files to read, given these %d titles' % (len(filelist), len(titles)))
     texts = {}
     # scan all filelist
@@ -65,7 +65,7 @@ def process_entities(args):
         title = cc.convert(title)
         text = title_text.get(title)
         if text is None:
-            #logging.warning("specified title %s not found" % title.encode('utf-8'))
+            logging.warning("specified title %s not found" % title.encode('utf-8'))
             text = ""
         else:
             logging.debug("title %s found" % title.encode('utf-8'))
