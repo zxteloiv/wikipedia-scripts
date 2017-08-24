@@ -21,7 +21,6 @@ def openfile(f, opt='r'):
 def load_redir_mapping(rfile):
     redir = {}
     for l in openfile(rfile):
-        logging.debug(l.rstrip())
         arr = l.decode('utf-8').rstrip().split('\t')
         redir[arr[0]] = arr[1]
     logging.debug('redirect contains %d entries' % len(redir))
