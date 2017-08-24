@@ -10,6 +10,10 @@ db = 1
 
 from utils.cirrus import openfile
 
+def get_redis_wikidata(db=2):
+    r = redis.StrictRedis(host=host, port=port, db=db)
+    return r
+
 def get_redis_redir(db=3):
     r = redis.StrictRedis(host=host, port=port, db=db)
     return r
