@@ -35,8 +35,31 @@ def load_idx_mapping(idxfile):
     return title_idx
 
 def redirect(redir_idx, title):
-    if type(title) == 'str':
+    if type(title) == type('str'):
         title = title.decode('utf-8')
     target = redir_idx.get(title)
     return title if target is None else target
+
+def redis_redirect(r, title):
+    title_t = type(title)
+    if title_t == type(u'unicode'):
+        title = title.encode('utf-8')
+    target = r.get('CIRRUS_REDIR_' + title)
+
+    if target is None:
+        return title.decode('utf-8') if title_t == type(u'unicode') else title
+    else:
+        return target.decode('utf-8') if title_t == type(u'unicode') else target
+
+def query_redis_idx(title, idx):
+    title_t = type(title)
+    if title_t == type(u'unicode'):
+        title = title.encode('utf-8')
+    target = idx.get('CIRRUS_TITLE_' + title)
+    if target is not None and title_t == type(u'unicode'):
+        target = target.decode('utf-8')
+    return target
+
+def redis_canonicalize(title, redir):
+    return cc.convert(redis_redirect(redir, title))
 

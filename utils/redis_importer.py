@@ -10,6 +10,14 @@ db = 1
 
 from utils.cirrus import openfile
 
+def get_redis_redir(db=3):
+    r = redis.StrictRedis(host=host, port=port, db=db)
+    return r
+
+def get_redis_title(db=1):
+    r = redis.StrictRedis(host=host, port=port, db=db)
+    return r
+
 def arity_2(tsvfile, prefix=u""):
     r = redis.StrictRedis(host=host, port=port, db=db)
     fail = 0
