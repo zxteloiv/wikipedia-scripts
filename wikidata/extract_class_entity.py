@@ -34,10 +34,6 @@ def collect_categories(args):
         except:
             continue
 
-    logging.debug("str: %d, unicode %d" % (reduce(
-        lambda v, x: (v[0] + 1, v[1]) if x == type('str') else (v[0], v[1] + 1),
-        map(type, categories), (0, 0))))
-
     return categories
 
 def extract(args):
