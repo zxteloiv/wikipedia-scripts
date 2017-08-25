@@ -2,52 +2,86 @@
 
 from __future__ import absolute_import
 
-from .reader import reader
-import argparse, logging, json
+from .reader import reader, claim_value
+import argparse, logging, json, datetime
 
 import opencc
 cc = opencc.OpenCC()
 
+def collect_categories(args):
+    categories = set()
+    for i, entity in enumerate(reader(args.input)):
+        if i % 20000 == 0:
+            logging.info("%d data (first) processed: %s" %(i, datetime.datetime.now().strftime('%m%d-%H:%M:%S')))
+            if args.debug and i / 20000 == 1:
+                break
+
+        try:
+            subclass_claims = entity['claims']['P279']
+            values = filter(None, (claim_value(claim) for claim in subclass_claims))
+
+            # An entity with a non-empty 'subclass_of' property is itself a class.
+            # The parent entities indicated by the 'subclass_of' property are all classes.
+            # If the class is an 'instance_of' another entity, the other one must also be a class.
+            if values:
+                categories.add(entity['id'])
+
+                categories.update(values)
+                instance_claims = entity['claims']['P31']
+                values = filter(None, (claim_value(claim) for claim in instance_claims))
+                categories.update(values)
+
+        except:
+            continue
+
+    logging.debug("str: %d, unicode %d" % (reduce(
+        lambda v, x: (v[0] + 1, v[1]) if x == type('str') else (v[0], v[1] + 1),
+        map(type, categories), (0, 0))))
+
+    return categories
+
 def extract(args):
+    categories = collect_categories(args)
+
+    logging.info('got all categories, count %d' % len(categories))
+    logging.debug('first 100 categories repr: ' + ','.join(repr(x) for x in list(categories)[:100]))
+    
     output = open(args.output, 'w')
-    for entity in reader(args.input):
+    for i, entity in enumerate(reader(args.input)):
+        if i % 20000 == 0:
+            logging.info("%d data (first) processed: %s" %(i, datetime.datetime.now().strftime('%m%d-%H:%M:%S')))
+            if args.debug and i / 20000 == 1:
+                break
+
+        try:
+            qid = entity['id']
+        except:
+            continue
+
+        if qid not in categories: continue
 
         if 'claims' not in entity: continue
         claims = entity['claims']
-        if u'P279' not in claims: continue
-        subclass_claim = claims['P279']
+        subclass_claims = claims['P279'] if 'P279' in claims else [] # subclass_of
+        instance_claims = claims['P31'] if 'P31' in claims else [] # instance_of
+        if len(subclass_claims) + len(instance_claims) == 0: continue
 
-        entity = arrange(entity)
-        output.write(json.dumps(entity) + "\n")
+        subclass_values = filter(None, (claim_value(claim) for claim in subclass_claims))
+        instance_values = filter(None, (claim_value(claim) for claim in instance_claims))
 
-def arrange(entity):
-    new_entity = {}
-    new_entity['id'] = entity['id']
-    try:
-        new_entity['enlabel'] = entity['labels']['en']['value']
-    except:
-        new_entity['enlabel'] = ""
-    try:
-        new_entity['zhlabel'] = entity['labels']['zh']['value']
-    except:
-        new_entity['zhlabel'] = ""
+        new_entity = {}
+        new_entity['id'] = entity['id']
+        try:
+            new_entity['enlabel'] = entity['labels']['en']['value']
+        except:
+            new_entity['enlabel'] = ""
+        try:
+            new_entity['zhlabel'] = entity['labels']['zh']['value']
+        except:
+            new_entity['zhlabel'] = ""
+        new_entity['pids'] = subclass_values + instance_values
 
-    new_entity['pids'] = []
-    for claim in entity['claims']['P279']:
-        if 'mainsnak' not in claim: continue
-        mainsnak = claim['mainsnak']
-        if 'datavalue' not in mainsnak: continue
-        datavalue = mainsnak['datavalue']
-        if 'type' not in datavalue: continue
-        datavaluetype = datavalue['type']
-        if datavaluetype == 'wikibase-entityid':
-            value = datavalue['value']['numeric-id']
-            new_entity['pids'].append('Q' + str(value))
-        elif datavaluetype == "string":
-            value = datavalue['value']
-            new_entity['pids'].append('Q' + value if value[0] != 'Q' else value)
-
-    return new_entity
+        output.write(json.dumps(new_entity) + "\n")
 
 def main():
     parser = argparse.ArgumentParser(description="extract class entity and subclass relation")
