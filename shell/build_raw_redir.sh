@@ -8,6 +8,8 @@ fi
 savepath=$2
 echo filelist=$1, savepath=$2
 
+mkdir -p $savepath;
+
 while read line;
 do
     filesuffix=$(echo $line | awk -F "/" '{print $(NF-1)"_"$NF}')
