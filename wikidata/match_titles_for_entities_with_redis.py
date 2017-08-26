@@ -28,13 +28,18 @@ def bulk_query_wikipage(title_idx, titles, redir_idx):
     return texts
 
 def process_entities(args):
-    title_idx = get_redis_title()
-    redir_idx = get_redis_redir()
+    wikisite = args.wikisite
+    if wikisite == "zhwiki":
+        title_db, redir_db = 1, 3
+    elif wikisite == "enwiki":
+        title_db, redir_db = 4, 5
+
+    title_idx = get_redis_title(title_db)
+    redir_idx = get_redis_redir(redir_db)
 
     logging.info('collect titles for entities...')
 
     # thousands level
-    wikisite = args.wikisite
     title_bulk = set()
     for i, entity in enumerate(reader(args.entities)):
         try:
