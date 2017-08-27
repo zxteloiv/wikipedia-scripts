@@ -1,7 +1,7 @@
 # coding: utf-8
 
 from __future__ import absolute_import
-from .reader import reader
+from utils.reader import reader
 import datetime
 import argparse, logging
 

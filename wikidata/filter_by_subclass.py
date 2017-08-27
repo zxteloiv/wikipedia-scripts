@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from .reader import reader, reader_for_list
+from utils.reader import reader, reader_for_list
 import argparse, logging, json, datetime
 
 import opencc
