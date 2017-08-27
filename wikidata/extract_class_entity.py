@@ -2,7 +2,8 @@
 
 from __future__ import absolute_import
 
-from utils.reader import reader, claim_value
+from utils.reader import reader
+from utils.wikidata import claim_value
 import argparse, logging, json, datetime
 
 import opencc

@@ -7,7 +7,7 @@ import logging
 
 def reader_for_list(filelist):
     """
-    a generator to read from multiple wikidata dump files
+    a generator to read from multiple json dump files
     """
 
     for filename in open(filelist):
@@ -19,7 +19,8 @@ def reader_for_list(filelist):
 
 def reader(filename):
     """
-    a generator to read wikidata dump file
+    a generator to read json data file,
+    e.g. wikidata dump file or cirrus page file
     format:
         [
             {entity obj},
@@ -41,20 +42,4 @@ def reader(filename):
 
     f.close()
             
-def claim_value(claim):
-    if 'mainsnak' not in claim: return None
-    mainsnak = claim['mainsnak']
-    if 'datavalue' not in mainsnak: return None
-    datavalue = mainsnak['datavalue']
-    if 'type' not in datavalue: return None
-    datavaluetype = datavalue['type']
-    if datavaluetype == 'wikibase-entityid':
-        value = datavalue['value']['numeric-id']
-        return u'Q' + unicode(value)
-    elif datavaluetype == "string":
-        value = datavalue['value']
-        return u'Q' + value if value[0] != u'Q' else unicode(value)
-
-    return None
-
 

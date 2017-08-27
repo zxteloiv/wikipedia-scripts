@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 from utils.reader import reader, reader_for_list
+from utils.wikidata import claim_value
 import argparse, logging, json, datetime
 
 import opencc
@@ -103,22 +104,6 @@ def build_kinship_by_domain(args):
     logging.info('all category kinships found: %d' % len(kinships))
 
     return kinships
-
-def claim_value(claim):
-    if 'mainsnak' not in claim: return None
-    mainsnak = claim['mainsnak']
-    if 'datavalue' not in mainsnak: return None
-    datavalue = mainsnak['datavalue']
-    if 'type' not in datavalue: return None
-    datavaluetype = datavalue['type']
-    if datavaluetype == 'wikibase-entityid':
-        value = datavalue['value']['numeric-id']
-        return 'Q' + str(value)
-    elif datavaluetype == "string":
-        value = datavalue['value']
-        return 'Q' + value if value[0] != 'Q' else value
-
-    return None
 
 def find_entities_by_kinships(args, kinships):
     logging.info('now filtering entities by kinships...')
