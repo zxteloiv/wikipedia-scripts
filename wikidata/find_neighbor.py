@@ -1,7 +1,7 @@
 # coding: utf-8
 
 from __future__ import absolute_import
-import argparse, logging, json, datetime
+import argparse, logging, json, datetime, re
 
 from utils.reader import reader
 from utils.redis_importer import get_redis_wikidata
@@ -13,7 +13,7 @@ def bulk_query_wikidata(qids, wikidata_idx):
     entities = {}
     for f in filelist:
         logging.info("reading file %s ..." % f)
-        for entity in reader(f):
+        for i, entity in enumerate(reader(f)):
             try:
                 qid = entity['id']
             except KeyError:
@@ -21,6 +21,11 @@ def bulk_query_wikidata(qids, wikidata_idx):
 
             if qid in qids and qid not in entities:
                 entities[qid] = entity
+
+            if i % 10000 == 0:
+                logging.info("%d items processed, current %s" % (i, qid))
+
+        logging.info("%d items cumulated after reading file %s" % (len(entities), f))
     return entities
 
 def find_neighbor(args):
@@ -34,10 +39,14 @@ def find_neighbor(args):
             break
 
         logging.info('find %d-hop neighbors for %d inputs' % (l, len(es)))
-        qids = set(filter(None, (claim_value(c) for e in es for _, cs in e['claims'].iteritems() for c in cs)))
-        es = bulk_query_wikidata(qids, wikidata_idx)
+        qids = set(filter(lambda v: v is not None and re.match('^Q\d+$', v),
+            (claim_value(c) for e in es for _, cs in e['claims'].iteritems() for c in cs)))
+        logging.debug('qids: %s' % u','.join(qids).encode('utf-8'))
+        logging.info('there\'re %d neighbors to read' % len(qids))
+        es_d = bulk_query_wikidata(qids, wikidata_idx)
+        es = [x for x in es_d.itervalues()]
 
-        for _, e in es.iteritems():
+        for e in es:
             output.write(json.dumps(e) + '\n')
 
 def main():

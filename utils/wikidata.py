@@ -26,7 +26,7 @@ def claim_value(claim):
         return u'Q' + unicode(value)
     elif datavaluetype == "string":
         value = datavalue['value']
-        return u'Q' + value if value[0] != u'Q' else unicode(value)
+        return value #u'Q' + value if value[0] != u'Q' else unicode(value)
 
     return None
 
