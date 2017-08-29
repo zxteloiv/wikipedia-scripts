@@ -36,7 +36,7 @@ def reader(filename):
         try:
             yield json.loads(l.rstrip().rstrip(','))
         except ValueError:
-            # error occured when invalid data and json
+            # error occurred when invalid data and json
             # first and last line in the original full file are [ and ] respectively
             continue
 
