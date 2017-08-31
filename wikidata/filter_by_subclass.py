@@ -173,6 +173,9 @@ def test(args):
     print "\n====> Taiwanese opera -> physical object"
     do_unit_test(u'Q31918', u'Q223557') 
 
+    if args.trace_from and args.trace_to:
+        do_unit_test(unicode(args.trace_from), unicode(args.trace_to))
+
 
 def main():
     parser = argparse.ArgumentParser(description="extract class entity and subclass relation")
@@ -194,6 +197,8 @@ def main():
     groupM.add_argument("-q", "--quiet", action="store_true", help="mute the log")
     groupM.add_argument("--debug", action="store_true", help="open debug log")
     groupM.add_argument("--test", action="store_true", help="run test rather than main entry")
+    groupM.add_argument("--trace_from", help="run test rather than main entry")
+    groupM.add_argument("--trace_to", help="run test rather than main entry")
 
     args = parser.parse_args()
 
