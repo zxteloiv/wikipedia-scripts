@@ -96,7 +96,7 @@ def build_kinship_by_domain(args):
             if category_output is not None:
                 category_output.write(l)
 
-        if i % 30000 == 0:
+        if i % 50000 == 0:
             logging.info('%d categories iterated over: %s' % (i, datetime.datetime.now().strftime('%Y%m%d%H%M%S')))
     if category_output is not None:
         category_output.close()
