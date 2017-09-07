@@ -8,16 +8,22 @@ from utils.redis_importer import get_redis_wikidata
 from utils.wikidata import get_neighbor_entity
 
 def find_neighbor(args):
+
+    filelist = [l.rstrip() for l in args.filelist]
     
     qids = set(v for _, _, v in next_neighbor_id(reader(args.entities)))
 
     written_qids = set()
+    output = open(args.output, 'w')
     for d in xrange(args.depth):
         logging.info('========> %d-hop neighbors amount: %d' % (d + 1, len(qids)))
 
+        if args.debug:
+            logging.debug(u','.join(qids).encode('utf-8'))
+            break
+
         next_qids = set()
-        output = open(args.output, 'w')
-        for i, e in enumerate(next_required_entity_from_files(qids, args.filelist)):
+        for i, e in enumerate(next_required_entity_from_files(qids, filelist)):
             if e['id'] not in written_qids:
                 output.write(json.dumps(e) + '\n')
                 written_qids.add(e['id'])
@@ -27,8 +33,11 @@ def find_neighbor(args):
 
             if i % 1000 == 0:
                 logging.info("found %d neighbors so far by reading files, %d have been written" % (i, len(written_qids)))
+                output.flush()
 
         qids = next_qids
+
+    output.close()
     
 
 def next_neighbor_id(iterable):
@@ -48,7 +57,6 @@ def next_neighbor_of_entity(e):
                 yield v
 
 def next_required_entity_from_files(qids, filelist):
-    filelist = [l.rstrip() for l in filelist]
     i = 0
     for f in filelist:
         logging.info("reading file %s ..." % f)
@@ -56,11 +64,10 @@ def next_required_entity_from_files(qids, filelist):
             if i % 10000 == 0:
                 logging.info('read %d input entities in file' % i)
 
+            i += 1
             qid = e['id']
             if qid in qids:
                 yield e
-
-            i += 1
 
 def main():
     parser = argparse.ArgumentParser(description="find neighbors for a file list of wikidata")
