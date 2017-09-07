@@ -5,10 +5,10 @@ import argparse, logging, json, datetime, re
 
 from utils.reader import reader
 from utils.redis_importer import get_redis_wikidata
-from utils.wikidata import query_redis_idx as query_entity, claim_value
+from utils.wikidata import query_redis_idx as query_entity, claim_value, mquery_redis_idx
 
 def bulk_query_wikidata(qids, wikidata_idx):
-    filelist = sorted(set(filter(None, (query_entity(idx, wikidata_idx) for idx in qids))))
+    filelist = sorted(set(mquery_redis_idx(qids, wikidata_idx)))
     logging.info('there are %d files to read for %d entities' % (len(filelist), len(qids)))
     entities = {}
     for f in filelist:
