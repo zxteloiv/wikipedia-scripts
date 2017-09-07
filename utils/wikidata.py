@@ -44,3 +44,22 @@ def claim_value(claim):
 
     return None
 
+def get_neighbor_entity(snak):
+    try:
+        mainsnak = snak['mainsnak']
+        snaktype = mainsnak['snaktype']
+        if snaktype != 'value':
+            return None
+
+        datavalue = mainsnak['datavalue']
+        datatype = mainsnak['datatype']
+        if datatype == 'wikibase-item':
+            value = u'Q' + unicode(datavalue['value']['numeric-id'])
+            return value
+
+    except KeyError:
+        return None
+
+    return None
+
+
