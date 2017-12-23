@@ -6,10 +6,10 @@ import logging
 from utils.reader import reader
 
 
-def main(filename):
+def main(filename, dbname, colname):
     conn = pymongo.MongoClient()
-    db = conn.wikidata
-    col = db.wikidata
+    db = conn.get_database(dbname)
+    col = db.get_collection(colname)
 
     logging.getLogger().setLevel(logging.INFO)
 
@@ -26,4 +26,7 @@ def main(filename):
 
 if __name__ == "__main__":
     import sys
-    main(sys.argv[1])
+    if len(sys.argv) < 4:
+        print "Usage: %s filename db collection"
+    else:
+        main(sys.argv[1], sys.argv[2], sys.argv[3])
