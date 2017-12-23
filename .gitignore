@@ -62,7 +62,6 @@ target/
 .idea
 *.swp
 *.tmp
-*.log
 *.err
 *.out
 log*
@@ -73,3 +72,4 @@ tmp
 log
 
 .python-version
+venv/
