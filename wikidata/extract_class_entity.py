@@ -6,8 +6,6 @@ from utils.reader import reader
 from utils.wikidata import claim_value
 import argparse, logging, json, datetime
 
-import opencc
-cc = opencc.OpenCC()
 
 def collect_categories(args):
     categories = set()
@@ -36,6 +34,7 @@ def collect_categories(args):
             continue
 
     return categories
+
 
 def extract(args):
     categories = collect_categories(args)

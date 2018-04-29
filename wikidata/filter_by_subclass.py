@@ -6,9 +6,6 @@ from utils.reader import reader, reader_for_list
 from utils.wikidata import claim_value
 import argparse, logging, json, datetime
 
-import opencc
-cc = opencc.OpenCC()
-
 class CategoryKinship(object):
     def __init__(self, cfile):
         self.cfile = cfile
