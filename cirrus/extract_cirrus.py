@@ -72,7 +72,7 @@ def process_dump(input_file, output_path, file_size):
             page['title'] = content['title']
             page['redirects'] = [r['title'] for r in content['redirect']]
         except:
-            logging.warn("invalid id=%s\t%s" % (index['index']['_id'], json.dumps(content)))
+            logging.warning("invalid id=%s\t%s" % (index['index']['_id'], json.dumps(content)))
             continue
 
         output.write(json.dumps(page) + '\n')
